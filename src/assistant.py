@@ -13,13 +13,16 @@ class Assistant():
         return self.model.inference_from_history(history, self.name)
     
     def get_plan_for_character(self, character):
-        prompt = f""""{character.description}
+        prompt = f""""
+        {character} is a character in a Dungeons and Dragons-style fantasy world.
 
-        Today is Monday January 1. Write an hour by hour plan for {character.name}'s upcoming day. Format it as follows:
+        {character.description}
 
-        06:00- Do x
-        07:00- Do y
-        08:00- Do z
+        Today is Monday January 1. Write a broad strokes plan for {character.name}'s upcoming day. Keep each item in the itinerary succinct. Format it as follows:
+
+        Time 1- Do x
+        Time 2- Do y
+        Time 3- Do z
         etc.
         """
         history = [
