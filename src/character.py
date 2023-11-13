@@ -1,6 +1,7 @@
 import json
 from llm import LLM
 from assistant import Assistant
+from collections import deque
 
 class Character():
     roleplay_prompt = "Roleplay as a Dungeons and Dragons character with the following description: "
@@ -14,7 +15,11 @@ class Character():
         self.name = self.bio["name"]
         self.description = self.generate_description()
         self.system_message = f"{self.roleplay_prompt}{self.description}"
+        self.chat_history = deque([self.system_message])
     
+    def add_system_message(self):
+        self.chat_history.appendleft({"role": "system", "content": f"{self.system_message}"})
+
     def generate_description(self):
         assistant = Assistant(self.model, "You are a helpful AI assistant. Your job is to summarise text.")
         facts = "\n".join(self.bio['facts'])
@@ -26,19 +31,28 @@ class Character():
     
     def update_description(self):
         self.description = self.generate_description()
-    
-    def generate_history(self):
-        history = [
-                    {"role": "system", "content": f"{self.system_message}"},
-                    {"role": "user", "content": f"Hello there, tell me about yourself.", "character": f"Lorde"},
-                    {"role": "assistant", "content": "Well what would you like to know, my boy?", "character": f"{self.name}"},
-                    {"role": "user", "content": f"I dunno. What are your hobbies?", "character": f"Lorde"},
-                    {"role": "assistant", "content": "", "character": f"{self.name}"}
-                ]
-        return history
+        self.system_message = f"{self.roleplay_prompt}{self.description}"
+        self.chat_history.popleft()
+        self.add_system_message()
 
-    def speak(self, history):
-        return self.model.inference_from_history(history, self.name)
+    def speak(self):
+        done = False
+        
+        while not done:
+            try:
+                message = self.model.inference_from_history(self.chat_history, self.name)
+                done = True
+            except:
+                self.chat_history.popleft()
+                self.chat_history.popleft()
+                self.add_system_message()
+
+        self.chat_history.append({"role": "assistant", "content": f"{message}", "character": f"{self.name}"})
+        return message
+    
+    def listen(self, content, other_character, other_role):
+        message = {"role": f"{other_role}", "content": f"{content}", "character": f"{other_character}"}
+        self.chat_history.append(message)
 
 if __name__ == "__main__":
     model = LLM()
