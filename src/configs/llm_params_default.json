@@ -8,6 +8,9 @@
     "do_sample": "True", 
     "top_p": 0.95, 
     "top_k": 40, 
-    "max_new_tokens": 200
+    "max_new_tokens": 200,
+    "chat_template": "thespis_template.txt",
+    "user_token": "",
+    "assistant_token": ""
     
 }
