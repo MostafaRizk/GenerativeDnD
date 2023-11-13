@@ -1,5 +1,6 @@
 import json
 from llm import LLM
+from assistant import Assistant
 
 class Character():
     roleplay_prompt = "Roleplay as a Dungeons and Dragons character with the following description: "
@@ -15,11 +16,20 @@ class Character():
         self.system_message = f"{self.roleplay_prompt}{self.description}"
     
     def generate_description(self):
-        return "\n".join(self.bio["facts"])
+        assistant = Assistant(self.model, "You are a helpful AI assistant. Your job is to summarise text.")
+        facts = "\n".join(self.bio['facts'])
+        summary = assistant.get_character_summary_from_bio(self.name, facts)
+        # print("------")
+        # print(summary)
+        # print("------")
+        return summary
+    
+    def update_description(self):
+        self.description = self.generate_description()
     
     def generate_history(self):
         history = [
-                    {"role": "system", "content": f"{self.system_message}", "character": f"{self.name}"},
+                    {"role": "system", "content": f"{self.system_message}"},
                     {"role": "user", "content": f"Hello there, tell me about yourself.", "character": f"Lorde"},
                     {"role": "assistant", "content": "Well what would you like to know, my boy?", "character": f"{self.name}"},
                     {"role": "user", "content": f"I dunno. What are your hobbies?", "character": f"Lorde"},

@@ -20,6 +20,17 @@ class LLM():
         self.tokenizer.chat_template = f.read()
         f.close()
         self.assistant_token = self.params["assistant_token"]
+        self.pipe = pipeline(
+            "text-generation",
+            model=self.model,
+            tokenizer=self.tokenizer,
+            max_new_tokens=self.params["max_new_tokens"],
+            do_sample=self.params["do_sample"],
+            temperature=self.params['temperature'],
+            top_p=self.params["top_p"],
+            top_k=self.params["top_k"],
+            repetition_penalty=self.params["repetition_penalty"]
+            )
     
     def inference_from_history(self, history, character_name):
         if self.assistant_token == "":
@@ -29,14 +40,16 @@ class LLM():
         
         context = self.tokenizer.apply_chat_template(history, tokenize=False) + assistant_token
         
-        input_ids = self.tokenizer(context, return_tensors='pt').input_ids.cuda()
-        output = self.model.generate(inputs=input_ids, 
-                                     temperature=self.params['temperature'], 
-                                     do_sample=self.params["do_sample"], 
-                                     top_p=self.params["top_p"], 
-                                     top_k=self.params["top_k"], 
-                                     max_new_tokens=self.params["max_new_tokens"])
-        return self.tokenizer.decode(output[0], skip_special_tokens=True)
+        # input_ids = self.tokenizer(context, return_tensors='pt').input_ids.cuda()
+        # output = self.model.generate(inputs=input_ids, 
+        #                              temperature=self.params['temperature'], 
+        #                              do_sample=self.params["do_sample"], 
+        #                              top_p=self.params["top_p"], 
+        #                              top_k=self.params["top_k"], 
+        #                              max_new_tokens=self.params["max_new_tokens"])
+        # print(input_ids)
+        # return self.tokenizer.decode(output[0], skip_special_tokens=True)
+        return self.pipe(context)[0]['generated_text'][len(context):]
 
 if __name__ == "__main__":
     llm = LLM()
