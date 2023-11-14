@@ -16,6 +16,7 @@ class Character():
         self.description = self.generate_description()
         self.system_message = f"{self.roleplay_prompt}{self.description}"
         self.chat_history = deque([self.system_message])
+        self.plan = []
     
     def add_system_message(self):
         self.chat_history.appendleft({"role": "system", "content": f"{self.system_message}"})
