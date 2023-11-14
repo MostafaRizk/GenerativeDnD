@@ -37,6 +37,11 @@ class Conversation():
     def generate_next_message(self):
         character = self.characters[self.current_speaker_index]
         response = character.speak()
+
+        for other_character in characters:
+            if other_character != character:
+                other_character.listen(response, character, "assistant")
+
         self.current_speaker_index += 1
         self.current_speaker_index %= len(characters)
         
@@ -44,6 +49,7 @@ class Conversation():
 
 if __name__ == "__main__":
     model = LLM()
+    #model = LLM(file="llm_params_planning.json")
     characters = [Character("src/assets/Bazza_Summerwood.json", model), Character("src/assets/Leanah_Rasteti.json", model)]
     setup = "It is dawn and Bazza has just walked into the empty tavern to find Leanah doing inventory"
     conversation = Conversation(characters, setup)

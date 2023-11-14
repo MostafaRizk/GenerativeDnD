@@ -4,7 +4,7 @@
     "device_map": "auto",
     "use_fast": "True",
     "trust_remote_code": "False",
-    "temperature": 0.7,
+    "temperature": 0.1,
     "do_sample": "True", 
     "top_p": 0.95, 
     "top_k": 40, 

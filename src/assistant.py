@@ -1,7 +1,10 @@
 import helpers
+from datetime import datetime
 from collections import deque
 
 class Assistant():
+    time_format = "%I:%M%p"
+
     def __init__(self, model, system_message):
         self.model = model
         self.system_message = system_message
@@ -22,7 +25,7 @@ class Assistant():
         {character.description}
 
         Today is {date}. Write a broad strokes plan for {character.name}'s upcoming day from when they wake up until they sleep. 
-        Write an itinerary with 6 tasks and their start times. Keep each item in the itinerary succinct. Format it as follows:
+        Write an itinerary with 5-10 tasks and their start times. Keep each item in the itinerary succinct. Format it as follows:
 
         1) Wake up at X:XXam
         2) Do Task 2 at X:XXam
@@ -78,30 +81,53 @@ class Assistant():
             try:
                 raw_plan = self.make_task_more_detailed_helper(character, task, start_time, end_time)
                 plan = helpers.get_plan_from_plan_string(raw_plan)
+
+                start = datetime.strptime(start_time.upper(), self.time_format)
+
+                if end_time != "unspecified time":
+                    end = datetime.strptime(end_time.upper(), self.time_format)
+                else:
+                    end = None
+
+                for _, sub_time in plan:
+                    sub_time = datetime.strptime(sub_time.upper(), self.time_format)
+
+                    if sub_time < start or (end and sub_time > end):
+                        print("Time falls out of range")
+                        raise TypeError("Sub task time falls outside the range of parent task")
+
                 done = True
             except TypeError:
+                print("TypeError")
                 pass
         
         return plan
 
 
 
-if __name__ == "__main__":
+if __name__ == "__main__": 
     from llm import LLM
     from character import Character
     
-    model = LLM()
+    model = LLM(file="llm_params_planning.json")
     #character = Character("src/assets/Bazza_Summerwood.json", model)
     character = Character("src/assets/Leanah_Rasteti.json", model)
     assistant = Assistant(model, "You are a helpful AI assistant. Your job is to write itineraries for people's days")
     plan = assistant.get_plan_for_character(character)
     print(plan)
     
-    for i, item in enumerate(plan):
-        print(item)
-        if i + 1 < len(plan):
-            end_time = plan[i+1][1]
-        detailed_plan = assistant.make_task_more_detailed(character, item[0], item[1], end_time)
-        print(detailed_plan)
-        print()
+    # for i, item in enumerate(plan):
+    #     print(item)
+    #     if i + 1 < len(plan):
+    #         end_time = plan[i+1][1]
+    #     detailed_plan = assistant.make_task_more_detailed(character, item[0], item[1], end_time)
+    #     print(detailed_plan)
+    #     print()
+
+    # for i in range(3):
+    #     item_to_expand = plan[1]
+    #     if len(plan) > 2:
+    #         end_time = plan[2][1]
+    #     plan = assistant.make_task_more_detailed(character, item_to_expand[0], item_to_expand[1], end_time)
+    #     print(plan)
 

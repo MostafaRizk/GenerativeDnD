@@ -47,6 +47,10 @@ class Character():
                 self.chat_history.popleft()
                 self.chat_history.popleft()
                 self.add_system_message()
+        
+        cutoff_index = message.find("\n")
+        if cutoff_index != -1:
+            message = message[:cutoff_index]
 
         self.chat_history.append({"role": "assistant", "content": f"{message}", "character": f"{self.name}"})
         return message
