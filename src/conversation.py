@@ -48,6 +48,17 @@ class Conversation():
         self.current_speaker_index %= len(characters)
         
         return character.name, response
+    
+    def is_player_next(self):
+        next_speaker = self.characters[self.current_speaker_index]
+        if type(next_speaker) == PlayerCharacter:
+            return True
+        else:
+            return False
+    
+    def get_speaker_name(self):
+        next_speaker = self.characters[self.current_speaker_index]
+        return next_speaker.name
 
 if __name__ == "__main__":
     model = LLM()
@@ -71,11 +82,17 @@ if __name__ == "__main__":
     
     # {characters[0].name} is doing the following task: {character_activities[0]}
     # {characters[1].name} is doing the following task: {character_activities[1]}"""
-    setup = "Everyone has just sat down at a big round table in the Red Olive's main office"
+
+    setup = "Bazza and Leanah are having a mellow conversation behind the Red Olive reception desk on a quiet day"
     
     conversation = Conversation(characters, setup)
     
     for i in range(10):
-        name, response = conversation.generate_next_message()
-        print(f"{name}: {response}")
+        if conversation.is_player_next():
+            name = conversation.get_speaker_name()
+            print(f"{name}: ", end="")
+            conversation.generate_next_message()
+        else:
+            name, response = conversation.generate_next_message()
+            print(f"{name}: {response}")
         print()
