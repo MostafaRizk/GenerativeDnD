@@ -5,18 +5,19 @@ from collections import deque
 class Assistant():
     time_format = "%I:%M%p"
 
-    def __init__(self, model, system_message):
+    def __init__(self, model):
         self.model = model
-        self.system_message = system_message
+        self.planning_system_message = "You are a helpful AI assistant. Your job is to write itineraries for people's days"
+        self.summary_system_message = "You are a helpful AI assistant. Your job is to summarise text."
         self.name = "assistant"
     
     def get_character_summary_from_bio(self, name, bio):
         prompt = f"Write a summary of {name} based on the following information: \n\n {bio}"
         history = [
-                    {"role": "system", "content": f"{self.system_message}"},
+                    {"role": "system", "content": f"{self.summary_system_message}"},
                     {"role": "user", "content": f"{prompt}", "character": f"user"}
                 ]
-        return self.model.inference_from_history(history, self.name)
+        return self.model.inference_from_history(history, self.name, inference_type="assistant")
     
     def get_plan_for_character_helper(self, character, date):
         prompt = f""""
@@ -35,10 +36,10 @@ class Assistant():
         6) Go to bed at X:XXpm
         """
         history = [
-                    {"role": "system", "content": f"{self.system_message}"},
+                    {"role": "system", "content": f"{self.planning_system_message}"},
                     {"role": "user", "content": f"{prompt}", "character": f"user"}
                 ]
-        return self.model.inference_from_history(history, self.name)
+        return self.model.inference_from_history(history, self.name, inference_type="assistant")
     
     def get_plan_for_character(self, character, date="Monday January 1"):
         done = False
@@ -69,10 +70,10 @@ class Assistant():
         5) Do Step 5 at X:XXpm
         """
         history = [
-                    {"role": "system", "content": f"{self.system_message}"},
+                    {"role": "system", "content": f"{self.planning_system_message}"},
                     {"role": "user", "content": f"{prompt}", "character": f"user"}
                 ]
-        return self.model.inference_from_history(history, self.name)
+        return self.model.inference_from_history(history, self.name, inference_type="assistant")
     
     def make_task_more_detailed(self, character, task, start_time, end_time="unspecified time"):
         done = False

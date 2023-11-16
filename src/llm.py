@@ -3,7 +3,7 @@ import os
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
 class LLM():
-    def __init__(self, path="src/configs", file="llm_params_default.json"):
+    def __init__(self, path="src/configs", file="thespis_params.json"):
         parameter_file = os.path.join(path, file)
         f = open(parameter_file)
         self.params = json.load(f)
@@ -20,19 +20,30 @@ class LLM():
         self.tokenizer.chat_template = f.read()
         f.close()
         self.assistant_token = self.params["assistant_token"]
-        self.pipe = pipeline(
+        self.character_pipe = pipeline(
             "text-generation",
             model=self.model,
             tokenizer=self.tokenizer,
-            max_new_tokens=self.params["max_new_tokens"],
-            do_sample=self.params["do_sample"],
-            temperature=self.params['temperature'],
-            top_p=self.params["top_p"],
-            top_k=self.params["top_k"],
-            repetition_penalty=self.params["repetition_penalty"]
+            max_new_tokens=self.params["character_params"]["max_new_tokens"],
+            do_sample=self.params["character_params"]["do_sample"],
+            temperature=self.params["character_params"]['temperature'],
+            top_p=self.params["character_params"]["top_p"],
+            top_k=self.params["character_params"]["top_k"],
+            repetition_penalty=self.params["character_params"]["repetition_penalty"]
+            )
+        self.assistant_pipe = pipeline(
+            "text-generation",
+            model=self.model,
+            tokenizer=self.tokenizer,
+            max_new_tokens=self.params["assistant_params"]["max_new_tokens"],
+            do_sample=self.params["assistant_params"]["do_sample"],
+            temperature=self.params["assistant_params"]['temperature'],
+            top_p=self.params["assistant_params"]["top_p"],
+            top_k=self.params["assistant_params"]["top_k"],
+            repetition_penalty=self.params["assistant_params"]["repetition_penalty"]
             )
     
-    def inference_from_history(self, history, character_name):
+    def inference_from_history(self, history, character_name, inference_type):
         if self.assistant_token == "":
             assistant_token = character_name + ": "
         else:
@@ -40,16 +51,10 @@ class LLM():
         
         context = self.tokenizer.apply_chat_template(history, tokenize=False) + assistant_token
         
-        # input_ids = self.tokenizer(context, return_tensors='pt').input_ids.cuda()
-        # output = self.model.generate(inputs=input_ids, 
-        #                              temperature=self.params['temperature'], 
-        #                              do_sample=self.params["do_sample"], 
-        #                              top_p=self.params["top_p"], 
-        #                              top_k=self.params["top_k"], 
-        #                              max_new_tokens=self.params["max_new_tokens"])
-        # print(input_ids)
-        # return self.tokenizer.decode(output[0], skip_special_tokens=True)
-        return self.pipe(context)[0]['generated_text'][len(context):]
+        if inference_type == "character":
+            return self.character_pipe(context)[0]['generated_text'][len(context):]
+        elif inference_type == "assistant":
+            return self.assistant_pipe(context)[0]['generated_text'][len(context):]
 
 if __name__ == "__main__":
     llm = LLM()

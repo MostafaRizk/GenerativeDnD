@@ -4,15 +4,38 @@ from assistant import Assistant
 from collections import deque
 
 class Character():
-    roleplay_prompt = "Roleplay as a Dungeons and Dragons character with the following description: "
-    
-    def __init__(self, bio_file, model, client=None):
-        self.model = model
-        self.client = client
+    def __init__(self, bio_file):
         f = open(bio_file)
         self.bio = json.load(f)
         f.close()
         self.name = self.bio["name"]
+        self.appearance = self.bio["initial_appearance"]
+    
+    def speak(self):
+        pass
+
+    def listen(self):
+        pass
+
+
+class PlayerCharacter(Character):
+    def __init__(self, bio_file):
+        Character.__init__(self, bio_file)
+    
+    def speak(self):
+        response = input()
+        return response
+
+    def listen(self, content, other_character, other_role):
+        pass
+
+class NonPlayerCharacter(Character):
+    roleplay_prompt = "Roleplay as a Dungeons and Dragons character with the following description: "
+    
+    def __init__(self, bio_file, model, client=None):
+        Character.__init__(self, bio_file)
+        self.model = model
+        self.client = client
         self.description = self.generate_description()
         self.system_message = f"{self.roleplay_prompt}{self.description}"
         self.chat_history = deque([self.system_message])
@@ -22,8 +45,8 @@ class Character():
         self.chat_history.appendleft({"role": "system", "content": f"{self.system_message}"})
 
     def generate_description(self):
-        assistant = Assistant(self.model, "You are a helpful AI assistant. Your job is to summarise text.")
-        facts = "\n".join(self.bio['facts'])
+        assistant = Assistant(self.model)
+        facts = "\n".join([self.bio["initial_appearance"]] + self.bio['initial_facts'])
         summary = assistant.get_character_summary_from_bio(self.name, facts)
         # print("------")
         # print(summary)
@@ -41,7 +64,7 @@ class Character():
         
         while not done:
             try:
-                message = self.model.inference_from_history(self.chat_history, self.name)
+                message = self.model.inference_from_history(self.chat_history, self.name, inference_type="character")
                 done = True
             except:
                 self.chat_history.popleft()

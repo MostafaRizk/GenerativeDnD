@@ -1,14 +1,16 @@
 {
     "name": "Leanah Rasteti",
-    "facts": [
-            "Leanah Rasteti is a slender, brunette, half-elf young woman with olive skin and grey eyes.",
+    "initial_appearance": "Leanah Rasteti is a slender, brunette, half-elf young woman with olive skin and grey eyes.",
+    "initial_facts": [
             "Leanah Rasteti is sarcastic, highly intelligent, and slightly cynical due to how people treated her when she was a street urchin.",
             "Leanah Rasteti is a tavern maid at the Red Olive Inn's tavern",
             "Leanah Rasteti became a street urchin when she was a young girl because her parents died of a plague",
             "Leanah Rasteti has a deep respect for Bazza Summerwood because of how he took her in. He is like a father to her.",
             "Leanah Rasteti thinks Bazza is naive to believe he can ever create a safe place in Edengard, but she secretly admires his optimism",
             "Leanah Rasteti is annoyed that she has to mentor Myrna Skydane",
-            "Leanah Rasteti thinks Myrna Skydane's bubbly attitude is a bit much",
+            "Leanah Rasteti thinks Myrna Skydane's bubbly attitude is a bit much"
+    ],
+    "initial_knowledge": [
             "Bazza Summerwood is kind, jolly, understanding and empathetic but has zero tolerance for bullying and discrimination",
             "Bazza Summerwood is the owner and innkeeper of the Red Olive Inn, a business he founded and built from the ground up.",
             "Bazza Summerwood moved to Edengard as a boy with his parents because his father got offered a good job as a cook.",

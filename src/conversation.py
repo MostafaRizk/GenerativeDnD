@@ -1,5 +1,7 @@
-from character import Character
+from character import NonPlayerCharacter, PlayerCharacter, Character
 from llm import LLM
+from assistant import Assistant
+from datetime import datetime
 
 class Conversation():
     def __init__(self, characters, setup):
@@ -49,9 +51,28 @@ class Conversation():
 
 if __name__ == "__main__":
     model = LLM()
-    #model = LLM(file="llm_params_planning.json")
-    characters = [Character("src/assets/Bazza_Summerwood.json", model), Character("src/assets/Leanah_Rasteti.json", model)]
-    setup = "It is dawn and Bazza has just walked into the empty tavern to find Leanah doing inventory"
+    characters = [NonPlayerCharacter("src/assets/characters/Bazza_Summerwood.json", model), NonPlayerCharacter("src/assets/characters/Leanah_Rasteti.json", model), PlayerCharacter("src/assets/players/Lorde_Moofilton.json")]
+    assistant = Assistant(model)
+    plans = [assistant.get_plan_for_character(character) for character in characters if type(character) != PlayerCharacter]
+    current_time = "10:00AM"
+    time_format = "%I:%M%p"
+    current_time = datetime.strptime(current_time, time_format)
+    character_activities = []
+
+    # for i in range(len(plans)):
+    #     for task in plans[i]:
+    #         task_start = datetime.strptime(task[1], time_format)
+    #         if task_start >= current_time:
+    #             character_activities.append(task[0])
+    #             break
+    
+    
+    # setup = f"""It is currently {current_time}. 
+    
+    # {characters[0].name} is doing the following task: {character_activities[0]}
+    # {characters[1].name} is doing the following task: {character_activities[1]}"""
+    setup = "Everyone has just sat down at a big round table in the Red Olive's main office"
+    
     conversation = Conversation(characters, setup)
     
     for i in range(10):
