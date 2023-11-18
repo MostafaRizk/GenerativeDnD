@@ -53,8 +53,9 @@ class Conversation():
         self.current_speaker_index %= len(characters)
 
         observation = self.assistant.get_observation_for_character(self.conversation_buffer, character)
+        importance = self.assistant.get_importance(observation)
         
-        return character.name, response, observation
+        return character.name, response, (observation, importance)
 
     
     def is_player_next(self):

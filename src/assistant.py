@@ -33,6 +33,18 @@ class Assistant():
         history.append({"role": "user", "content": f"{prompt}", "character": f"user"})
         return self.model.inference_from_history(history, self.name, inference_type="summary")
     
+    def get_importance(self, observation):
+        prompt = f"""On a scale of 1 to 10, where 1 is purely mundane and routine and 10 is extremely significant and rare, rate the likely significance of the following event:
+        
+        {observation}
+
+        """
+        history = [
+                    {"role": "system", "content": f"{self.summary_system_message}"},
+                    {"role": "user", "content": f"{prompt}", "character": f"user"}
+                ]
+        return self.model.inference_from_history(history, self.name, inference_type="summary")
+    
     def get_plan_for_character_helper(self, character, date):
         prompt = f""""
         {character.name} is a character in a Dungeons and Dragons-style fantasy world.
