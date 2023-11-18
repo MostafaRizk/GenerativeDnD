@@ -17,7 +17,16 @@
         "repetition_penalty": 1.1
     },
 
-    "assistant_params": {
+    "summary_params": {
+        "temperature": 0.1,
+        "do_sample": "True", 
+        "top_p": 0.95, 
+        "top_k": 40, 
+        "max_new_tokens": 200,
+        "repetition_penalty": 1.1
+    },
+
+    "planner_params": {
         "temperature": 0.1,
         "do_sample": "True", 
         "top_p": 0.95, 

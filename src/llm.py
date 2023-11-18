@@ -20,6 +20,7 @@ class LLM():
         self.tokenizer.chat_template = f.read()
         f.close()
         self.assistant_token = self.params["assistant_token"]
+        
         self.character_pipe = pipeline(
             "text-generation",
             model=self.model,
@@ -31,16 +32,29 @@ class LLM():
             top_k=self.params["character_params"]["top_k"],
             repetition_penalty=self.params["character_params"]["repetition_penalty"]
             )
-        self.assistant_pipe = pipeline(
+        
+        self.summary_pipe = pipeline(
             "text-generation",
             model=self.model,
             tokenizer=self.tokenizer,
-            max_new_tokens=self.params["assistant_params"]["max_new_tokens"],
-            do_sample=self.params["assistant_params"]["do_sample"],
-            temperature=self.params["assistant_params"]['temperature'],
-            top_p=self.params["assistant_params"]["top_p"],
-            top_k=self.params["assistant_params"]["top_k"],
-            repetition_penalty=self.params["assistant_params"]["repetition_penalty"]
+            max_new_tokens=self.params["summary_params"]["max_new_tokens"],
+            do_sample=self.params["summary_params"]["do_sample"],
+            temperature=self.params["summary_params"]['temperature'],
+            top_p=self.params["summary_params"]["top_p"],
+            top_k=self.params["summary_params"]["top_k"],
+            repetition_penalty=self.params["summary_params"]["repetition_penalty"]
+            )
+        
+        self.planner_pipe = pipeline(
+            "text-generation",
+            model=self.model,
+            tokenizer=self.tokenizer,
+            max_new_tokens=self.params["planner_params"]["max_new_tokens"],
+            do_sample=self.params["planner_params"]["do_sample"],
+            temperature=self.params["planner_params"]['temperature'],
+            top_p=self.params["planner_params"]["top_p"],
+            top_k=self.params["planner_params"]["top_k"],
+            repetition_penalty=self.params["planner_params"]["repetition_penalty"]
             )
     
     def inference_from_history(self, history, character_name, inference_type):
@@ -53,8 +67,10 @@ class LLM():
         
         if inference_type == "character":
             return self.character_pipe(context)[0]['generated_text'][len(context):]
-        elif inference_type == "assistant":
-            return self.assistant_pipe(context)[0]['generated_text'][len(context):]
+        elif inference_type == "summary":
+            return self.summary_pipe(context)[0]['generated_text'][len(context):]
+        elif inference_type == "planner":
+            return self.planner_pipe(context)[0]['generated_text'][len(context):]
 
 if __name__ == "__main__":
     llm = LLM()

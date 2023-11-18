@@ -17,7 +17,21 @@ class Assistant():
                     {"role": "system", "content": f"{self.summary_system_message}"},
                     {"role": "user", "content": f"{prompt}", "character": f"user"}
                 ]
-        return self.model.inference_from_history(history, self.name, inference_type="assistant")
+        return self.model.inference_from_history(history, self.name, inference_type="summary")
+    
+    def get_observation_for_character(self, messages, character):
+        prompt = f"""Describe in one sentence what {character.name} did and said in the previous text. Only describe what others can perceive, not {character.name}'s internal state and do not fabricate any information. 
+        Make the sentence as descriptive as possible. Start the sentence with '{character.name} is ' and end with a full stop. Some example sentences include:
+        
+        Frederik Olaffson is voraciously eating a warm pie while vocalising how much he is enjoying the taste.
+        Jemima Hendricks is practicing combat techniques on the wooden dummies next to the wall as he tells his friends why he is angry.
+        Edward Spangler is examining a book about necromancy and explaining to his friends what necromancy is."""
+
+        history = deque(list(messages))
+
+        history.appendleft({"role": "system", "content": f"{self.summary_system_message}"})
+        history.append({"role": "user", "content": f"{prompt}", "character": f"user"})
+        return self.model.inference_from_history(history, self.name, inference_type="summary")
     
     def get_plan_for_character_helper(self, character, date):
         prompt = f""""
@@ -39,7 +53,7 @@ class Assistant():
                     {"role": "system", "content": f"{self.planning_system_message}"},
                     {"role": "user", "content": f"{prompt}", "character": f"user"}
                 ]
-        return self.model.inference_from_history(history, self.name, inference_type="assistant")
+        return self.model.inference_from_history(history, self.name, inference_type="planner")
     
     def get_plan_for_character(self, character, date="Monday January 1"):
         done = False
@@ -73,7 +87,7 @@ class Assistant():
                     {"role": "system", "content": f"{self.planning_system_message}"},
                     {"role": "user", "content": f"{prompt}", "character": f"user"}
                 ]
-        return self.model.inference_from_history(history, self.name, inference_type="assistant")
+        return self.model.inference_from_history(history, self.name, inference_type="planner")
     
     def make_task_more_detailed(self, character, task, start_time, end_time="unspecified time"):
         done = False

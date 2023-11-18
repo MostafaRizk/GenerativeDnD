@@ -2,9 +2,10 @@ from character import NonPlayerCharacter, PlayerCharacter, Character
 from llm import LLM
 from assistant import Assistant
 from datetime import datetime
+from collections import deque
 
 class Conversation():
-    def __init__(self, characters, setup):
+    def __init__(self, characters, setup, model):
         assert type(characters) == list, "Must pass a list of characters"
         assert len(characters) > 0, "Character list is empty"
         
@@ -14,6 +15,9 @@ class Conversation():
         
         self.characters = characters
         self.current_speaker_index = 0
+        self.buffer_size = 1
+        self.conversation_buffer = deque(maxlen=len(characters)*self.buffer_size)
+        self.assistant = Assistant(model)
 
         for character in self.characters:
             character.listen(setup, "", "system")
@@ -39,6 +43,7 @@ class Conversation():
     def generate_next_message(self):
         character = self.characters[self.current_speaker_index]
         response = character.speak()
+        self.conversation_buffer.append({"role": "assistant", "content": f"{response}", "character": f"{character.name}"})
 
         for other_character in characters:
             if other_character != character:
@@ -46,8 +51,11 @@ class Conversation():
 
         self.current_speaker_index += 1
         self.current_speaker_index %= len(characters)
+
+        observation = self.assistant.get_observation_for_character(self.conversation_buffer, character)
         
-        return character.name, response
+        return character.name, response, observation
+
     
     def is_player_next(self):
         next_speaker = self.characters[self.current_speaker_index]
@@ -64,35 +72,28 @@ if __name__ == "__main__":
     model = LLM()
     characters = [NonPlayerCharacter("src/assets/characters/Bazza_Summerwood.json", model), NonPlayerCharacter("src/assets/characters/Leanah_Rasteti.json", model), PlayerCharacter("src/assets/players/Lorde_Moofilton.json")]
     assistant = Assistant(model)
-    plans = [assistant.get_plan_for_character(character) for character in characters if type(character) != PlayerCharacter]
-    current_time = "10:00AM"
-    time_format = "%I:%M%p"
-    current_time = datetime.strptime(current_time, time_format)
-    character_activities = []
-
-    # for i in range(len(plans)):
-    #     for task in plans[i]:
-    #         task_start = datetime.strptime(task[1], time_format)
-    #         if task_start >= current_time:
-    #             character_activities.append(task[0])
-    #             break
-    
-    
-    # setup = f"""It is currently {current_time}. 
-    
-    # {characters[0].name} is doing the following task: {character_activities[0]}
-    # {characters[1].name} is doing the following task: {character_activities[1]}"""
+    # plans = [assistant.get_plan_for_character(character) for character in characters if type(character) != PlayerCharacter]
+    # current_time = "10:00AM"
+    # time_format = "%I:%M%p"
+    # current_time = datetime.strptime(current_time, time_format)
+    # character_activities = []
 
     setup = "Bazza and Leanah are having a mellow conversation behind the Red Olive reception desk on a quiet day"
+    print(setup)
+    print()
     
-    conversation = Conversation(characters, setup)
+    conversation = Conversation(characters, setup, model)
     
-    for i in range(10):
+    while True:
         if conversation.is_player_next():
             name = conversation.get_speaker_name()
             print(f"{name}: ", end="")
-            conversation.generate_next_message()
+            _,_,observation = conversation.generate_next_message()
         else:
-            name, response = conversation.generate_next_message()
+            name, response, observation = conversation.generate_next_message()
             print(f"{name}: {response}")
+        
+        print("----")
+        print(observation)
+        print("----")
         print()
