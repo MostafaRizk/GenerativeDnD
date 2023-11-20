@@ -1,3 +1,5 @@
+import ray
+
 from character import NonPlayerCharacter, PlayerCharacter, Character
 from llm import LLM
 from assistant import Assistant
@@ -17,7 +19,6 @@ class Conversation():
         self.current_speaker_index = 0
         self.buffer_size = 1
         self.conversation_buffer = deque(maxlen=len(characters)*self.buffer_size)
-        self.assistant = Assistant(model)
 
         for character in self.characters:
             character.listen(setup, "", "system")
@@ -52,10 +53,10 @@ class Conversation():
         self.current_speaker_index += 1
         self.current_speaker_index %= len(characters)
 
-        observation = self.assistant.get_observation_for_character(self.conversation_buffer, character)
-        importance = self.assistant.get_importance(observation)
+        #observation = self.assistant.get_observation_for_character(self.conversation_buffer, character)
+        #importance = "N/A" #self.assistant.get_importance(observation)
         
-        return character.name, response, (observation, importance)
+        return character.name, response
 
     
     def is_player_next(self):
@@ -68,11 +69,22 @@ class Conversation():
     def get_speaker_name(self):
         next_speaker = self.characters[self.current_speaker_index]
         return next_speaker.name
+    
+    def get_speaker(self):
+        next_speaker = self.characters[self.current_speaker_index]
+        return next_speaker
+    
+    def get_conversation_buffer(self):
+        return self.conversation_buffer
 
 if __name__ == "__main__":
-    model = LLM()
-    characters = [NonPlayerCharacter("src/assets/characters/Bazza_Summerwood.json", model), NonPlayerCharacter("src/assets/characters/Leanah_Rasteti.json", model), PlayerCharacter("src/assets/players/Lorde_Moofilton.json")]
-    assistant = Assistant(model)
+    #model = LLM()
+    ray.init()
+    model = LLM(file="mistral_params.json")
+    assistant_model = LLM(file="mistral_params.json")
+    assistant = Assistant(assistant_model)#Assistant.remote(assistant_model)
+    characters = [NonPlayerCharacter("src/assets/characters/Bazza_Summerwood.json", model, assistant), NonPlayerCharacter("src/assets/characters/Leanah_Rasteti.json", model, assistant), PlayerCharacter("src/assets/players/Lorde_Moofilton.json")]
+
     # plans = [assistant.get_plan_for_character(character) for character in characters if type(character) != PlayerCharacter]
     # current_time = "10:00AM"
     # time_format = "%I:%M%p"
@@ -84,17 +96,32 @@ if __name__ == "__main__":
     print()
     
     conversation = Conversation(characters, setup, model)
+    observation_list = []
+
+    @ray.remote
+    def get_observation(buffer, character):
+        observation_list.append(assistant.get_observation_for_character(buffer, character))
     
-    while True:
+    for i in range(10):
+        speaker = conversation.get_speaker()
+        
         if conversation.is_player_next():
             name = conversation.get_speaker_name()
             print(f"{name}: ", end="")
-            _,_,observation = conversation.generate_next_message()
+            conversation.generate_next_message()
+            
         else:
-            name, response, observation = conversation.generate_next_message()
+            name, response = conversation.generate_next_message()
             print(f"{name}: {response}")
         
-        print("----")
-        print(observation)
-        print("----")
         print()
+        conv_buffer = conversation.get_conversation_buffer()
+        get_observation.remote(conv_buffer, speaker)
+        
+        
+    observation_list = ray.get(observation_list)
+    print("----")
+    for i in range(len(observation_list)):
+        print(observation_list[i])
+    print("----")
+    print()

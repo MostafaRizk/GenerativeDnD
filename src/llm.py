@@ -1,5 +1,6 @@
 import json
 import os
+import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
 class LLM():
@@ -66,11 +67,15 @@ class LLM():
         context = self.tokenizer.apply_chat_template(history, tokenize=False) + assistant_token
         
         if inference_type == "character":
-            return self.character_pipe(context)[0]['generated_text'][len(context):]
+            result = self.character_pipe(context)[0]['generated_text'][len(context):]
         elif inference_type == "summary":
-            return self.summary_pipe(context)[0]['generated_text'][len(context):]
+            result = self.summary_pipe(context)[0]['generated_text'][len(context):]
         elif inference_type == "planner":
-            return self.planner_pipe(context)[0]['generated_text'][len(context):]
+            result = self.planner_pipe(context)[0]['generated_text'][len(context):]
+        
+        torch.cuda.empty_cache()
+
+        return result
 
 if __name__ == "__main__":
     llm = LLM()

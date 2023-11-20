@@ -1,7 +1,9 @@
 import helpers
+import ray
 from datetime import datetime
 from collections import deque
 
+#@ray.remote
 class Assistant():
     time_format = "%I:%M%p"
 

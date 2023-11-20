@@ -32,9 +32,10 @@ class PlayerCharacter(Character):
 class NonPlayerCharacter(Character):
     roleplay_prompt = "Roleplay as a Dungeons and Dragons character with the following description: "
     
-    def __init__(self, bio_file, model, client=None):
+    def __init__(self, bio_file, model, assistant, client=None):
         Character.__init__(self, bio_file)
         self.model = model
+        self.assistant = assistant
         self.client = client
         self.description = self.generate_description()
         self.system_message = f"{self.roleplay_prompt}{self.description}"
@@ -45,9 +46,8 @@ class NonPlayerCharacter(Character):
         self.chat_history.appendleft({"role": "system", "content": f"{self.system_message}"})
 
     def generate_description(self):
-        assistant = Assistant(self.model)
         facts = "\n".join([self.bio["initial_appearance"]] + self.bio['initial_facts'])
-        summary = assistant.get_character_summary_from_bio(self.name, facts)
+        summary = self.assistant.get_character_summary_from_bio(self.name, facts)
         # print("------")
         # print(summary)
         # print("------")
