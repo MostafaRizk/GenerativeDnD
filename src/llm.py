@@ -2,7 +2,9 @@ import json
 import os
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+#from ray import serve
 
+#@serve.deployment
 class LLM():
     def __init__(self, path="src/configs", file="thespis_params.json"):
         parameter_file = os.path.join(path, file)

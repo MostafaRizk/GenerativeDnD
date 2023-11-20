@@ -78,8 +78,8 @@ class NonPlayerCharacter(Character):
         self.chat_history.append({"role": "assistant", "content": f"{message}", "character": f"{self.name}"})
         return message
     
-    def listen(self, content, other_character, other_role):
-        message = {"role": f"{other_role}", "content": f"{content}", "character": f"{other_character}"}
+    def listen(self, content, other_character_name, other_role):
+        message = {"role": f"{other_role}", "content": f"{content}", "character": f"{other_character_name}"}
         self.chat_history.append(message)
 
 if __name__ == "__main__":

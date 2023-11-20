@@ -1,5 +1,6 @@
-import ray
+#import requests
 
+#from ray import serve
 from character import NonPlayerCharacter, PlayerCharacter, Character
 from llm import LLM
 from assistant import Assistant
@@ -7,7 +8,7 @@ from datetime import datetime
 from collections import deque
 
 class Conversation():
-    def __init__(self, characters, setup, model):
+    def __init__(self, characters, setup):
         assert type(characters) == list, "Must pass a list of characters"
         assert len(characters) > 0, "Character list is empty"
         
@@ -48,7 +49,7 @@ class Conversation():
 
         for other_character in characters:
             if other_character != character:
-                other_character.listen(response, character, "assistant")
+                other_character.listen(response, character.name, "assistant")
 
         self.current_speaker_index += 1
         self.current_speaker_index %= len(characters)
@@ -78,12 +79,14 @@ class Conversation():
         return self.conversation_buffer
 
 if __name__ == "__main__":
-    #model = LLM()
-    ray.init()
+    #model = LLM.bind(file="mistral_params.json")
+    #assistant_model = LLM.bind(file="mistral_params.json")
     model = LLM(file="mistral_params.json")
     assistant_model = LLM(file="mistral_params.json")
     assistant = Assistant(assistant_model)#Assistant.remote(assistant_model)
-    characters = [NonPlayerCharacter("src/assets/characters/Bazza_Summerwood.json", model, assistant), NonPlayerCharacter("src/assets/characters/Leanah_Rasteti.json", model, assistant), PlayerCharacter("src/assets/players/Lorde_Moofilton.json")]
+    characters = [PlayerCharacter("src/assets/players/Lorde_Moofilton.json"), 
+                  #NonPlayerCharacter("src/assets/characters/Bazza_Summerwood.json", model, assistant), 
+                  NonPlayerCharacter("src/assets/characters/Leanah_Rasteti.json", model, assistant)]
 
     # plans = [assistant.get_plan_for_character(character) for character in characters if type(character) != PlayerCharacter]
     # current_time = "10:00AM"
@@ -91,18 +94,22 @@ if __name__ == "__main__":
     # current_time = datetime.strptime(current_time, time_format)
     # character_activities = []
 
-    setup = "Bazza and Leanah are having a mellow conversation behind the Red Olive reception desk on a quiet day"
+    # serve.run(model, route_prefix="/character")
+    # serve.run(assistant_model, route_prefix="/assistant")
+
+    def list_characters(characters):
+        name_sequence = ",".join([character.name for character in characters[:-1]])
+        name_sequence = name_sequence + " and " + characters[-1].name
+        return name_sequence
+
+    setup = f"It is a quiet day and the Red Olive lobby is completely silent. Nobody is around save for {list_characters(characters)}"
     print(setup)
     print()
     
-    conversation = Conversation(characters, setup, model)
+    conversation = Conversation(characters, setup)
     observation_list = []
 
-    @ray.remote
-    def get_observation(buffer, character):
-        observation_list.append(assistant.get_observation_for_character(buffer, character))
-    
-    for i in range(10):
+    for i in range(1000):
         speaker = conversation.get_speaker()
         
         if conversation.is_player_next():
@@ -116,12 +123,11 @@ if __name__ == "__main__":
         
         print()
         conv_buffer = conversation.get_conversation_buffer()
-        get_observation.remote(conv_buffer, speaker)
+        #observation = requests.get(assistant.get_observation_for_character(conv_buffer, speaker)).json()['result']
         
         
-    observation_list = ray.get(observation_list)
-    print("----")
-    for i in range(len(observation_list)):
-        print(observation_list[i])
-    print("----")
-    print()
+    # print("----")
+    # for i in range(len(observation_list)):
+    #     print(observation_list[i])
+    # print("----")
+    # print()
