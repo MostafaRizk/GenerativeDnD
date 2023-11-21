@@ -7,6 +7,9 @@ name = "pypi"
 transformers = "4.35.0"
 auto-gptq = "*"
 optimum = "1.14.0"
+ray = "2.8.0"
+chromadb = "0.4.17"
+uuid = "1.30"
 
 [dev-packages]
 
