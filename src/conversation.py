@@ -1,4 +1,6 @@
 #import requests
+import os
+import chromadb
 
 #from ray import serve
 from character import NonPlayerCharacter, PlayerCharacter, Character
@@ -26,7 +28,7 @@ class Conversation():
     
     def add_character(self, character):
         assert type(character) == Character, "The character must be of type Character"
-        assert character not in characters, "The character must not already be in the conversation"
+        assert character not in self.characters, "The character must not already be in the conversation"
 
         self.characters.append(character)
     
@@ -37,7 +39,7 @@ class Conversation():
         self.characters.remove(index_to_remove)
 
         if self.current_speaker_index == index_to_remove:
-            self.current_speaker_index %= len(characters)
+            self.current_speaker_index %= len(self.characters)
         
         elif self.current_speaker_index > index_to_remove:
             self.current_speaker_index -= 1
@@ -47,17 +49,22 @@ class Conversation():
         response = character.speak()
         self.conversation_buffer.append({"role": "assistant", "content": f"{response}", "character": f"{character.name}"})
 
-        for other_character in characters:
+        for other_character in self.characters:
             if other_character != character:
                 other_character.listen(response, character.name, "assistant")
 
         self.current_speaker_index += 1
-        self.current_speaker_index %= len(characters)
+        self.current_speaker_index %= len(self.characters)
 
         #observation = self.assistant.get_observation_for_character(self.conversation_buffer, character)
         #importance = "N/A" #self.assistant.get_importance(observation)
         
         return character.name, response
+    
+    def store_observation(self, observation, importance):
+        for character in self.characters:
+            if type(character) != PlayerCharacter:
+                character.store_memory(observation, importance)
 
     
     def is_player_next(self):
@@ -79,23 +86,14 @@ class Conversation():
         return self.conversation_buffer
 
 if __name__ == "__main__":
-    #model = LLM.bind(file="mistral_params.json")
-    #assistant_model = LLM.bind(file="mistral_params.json")
     model = LLM(file="mistral_params.json")
-    assistant_model = LLM(file="mistral_params.json")
+    assistant_model = model#LLM(file="mistral_params.json")
+    client = chromadb.PersistentClient(path=os.path.join(os.getcwd(),"memory"))
+    
     assistant = Assistant(assistant_model)#Assistant.remote(assistant_model)
-    characters = [PlayerCharacter("src/assets/players/Lorde_Moofilton.json"), 
-                  #NonPlayerCharacter("src/assets/characters/Bazza_Summerwood.json", model, assistant), 
-                  NonPlayerCharacter("src/assets/characters/Leanah_Rasteti.json", model, assistant)]
-
-    # plans = [assistant.get_plan_for_character(character) for character in characters if type(character) != PlayerCharacter]
-    # current_time = "10:00AM"
-    # time_format = "%I:%M%p"
-    # current_time = datetime.strptime(current_time, time_format)
-    # character_activities = []
-
-    # serve.run(model, route_prefix="/character")
-    # serve.run(assistant_model, route_prefix="/assistant")
+    characters = [PlayerCharacter("assets/players/Lorde_Moofilton.json"), 
+                  #NonPlayerCharacter("assets/characters/Bazza_Summerwood.json", model, assistant), 
+                  NonPlayerCharacter("assets/characters/Leanah_Rasteti.json", model, assistant, client)]
 
     def list_characters(characters):
         name_sequence = ",".join([character.name for character in characters[:-1]])
@@ -107,7 +105,7 @@ if __name__ == "__main__":
     print()
     
     conversation = Conversation(characters, setup)
-    observation_list = []
+    conversation.store_observation(observation=setup, importance=1)
 
     for i in range(1000):
         speaker = conversation.get_speaker()
@@ -123,11 +121,11 @@ if __name__ == "__main__":
         
         print()
         conv_buffer = conversation.get_conversation_buffer()
-        #observation = requests.get(assistant.get_observation_for_character(conv_buffer, speaker)).json()['result']
-        
-        
-    # print("----")
-    # for i in range(len(observation_list)):
-    #     print(observation_list[i])
-    # print("----")
-    # print()
+        observation = assistant.get_observation_for_character(conv_buffer, speaker)
+        importance = assistant.get_importance(observation)
+        conversation.store_observation(observation, importance)
+
+        # print("------")
+        # print(observation)
+        # print(importance)
+        # print("------")

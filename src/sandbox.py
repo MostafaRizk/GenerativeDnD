@@ -2,9 +2,10 @@ import json
 import os
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
-#from ray import serve
+from ray import serve
+from starlette.requests import Request
 
-#@serve.deployment
+@serve.deployment(num_replicas=1, ray_actor_options={"num_cpus": 1, "num_gpus": 0.5})
 class LLM():
     def __init__(self, config_path="configs", file="thespis_params.json"):
         current_path = os.getcwd()
@@ -12,8 +13,6 @@ class LLM():
         f = open(parameter_file)
         self.params = json.load(f)
         f.close()
-        self.context_size = self.params["context_size"]
-        self.observation_size = self.params["summary_params"]["max_new_tokens"]
 
         self.model = AutoModelForCausalLM.from_pretrained(self.params["model_name"],
                                                     device_map=self.params["device_map"],
@@ -81,10 +80,12 @@ class LLM():
         torch.cuda.empty_cache()
 
         return result
+    
+    async def __call__(self, http_request: Request) -> str:
+        response: str = await http_request.json()
+        return f"Hiya. The response was {response}"
 
-if __name__ == "__main__":
-    llm = LLM()
-    system_message = "You are a helpful AI assistant"
-    prompt = "What are you capable of?"
-    context = f"{system_message}\n\nuser:{prompt}"
-    print(llm.inference(context))
+# print(torch.cuda.current_device())    
+# torch.cuda_set_device(0)
+os.environ["CUDA_VISIBLE_DEVICES"]= "0"
+llm_app = LLM.bind(file="mistral_params.json")

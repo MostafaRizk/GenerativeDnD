@@ -1,4 +1,4 @@
-import helpers
+from helpers import *
 import ray
 from datetime import datetime
 from collections import deque
@@ -36,7 +36,13 @@ class Assistant():
         return self.model.inference_from_history(history, self.name, inference_type="summary")
     
     def get_importance(self, observation):
-        prompt = f"""On a scale of 1 to 10, where 1 is purely mundane and routine and 10 is extremely significant and rare, rate the likely significance of the following event:
+        prompt = f"""On a scale of 1 to 10, where 1 is purely mundane and routine and 10 is extremely significant and rare, rate the likely significance of the below event from the perspective of the character or characters involved. Start the sentence with 'The importance is '. Some example sentences include:
+
+        The importance is 2.
+        The importance is 10.
+        The importance is 4.
+
+        Here is the event:
         
         {observation}
 
@@ -45,7 +51,9 @@ class Assistant():
                     {"role": "system", "content": f"{self.summary_system_message}"},
                     {"role": "user", "content": f"{prompt}", "character": f"user"}
                 ]
-        return self.model.inference_from_history(history, self.name, inference_type="summary")
+        response= self.model.inference_from_history(history, self.name, inference_type="summary")
+        score = get_score_from_importance_string(response)
+        return score
     
     def get_plan_for_character_helper(self, character, date):
         prompt = f""""
@@ -75,7 +83,7 @@ class Assistant():
         while not done:
             try:
                 raw_plan = self.get_plan_for_character_helper(character, date)
-                plan = helpers.get_plan_from_plan_string(raw_plan)
+                plan = get_plan_from_plan_string(raw_plan)
                 done = True
             except TypeError:
                 pass
@@ -109,7 +117,7 @@ class Assistant():
         while not done:
             try:
                 raw_plan = self.make_task_more_detailed_helper(character, task, start_time, end_time)
-                plan = helpers.get_plan_from_plan_string(raw_plan)
+                plan = get_plan_from_plan_string(raw_plan)
 
                 start = datetime.strptime(start_time.upper(), self.time_format)
 

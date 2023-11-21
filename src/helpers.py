@@ -19,3 +19,21 @@ def get_plan_from_plan_string(plan_string):
         return plan
     else:
         raise TypeError("Plan string had an invalid format")
+
+def get_score_from_importance_string(importance_string):
+    sentence_pattern = r'The importance is \d{1,2}.'
+    digit_pattern = r'\d{1,2}'
+    
+    sentence = re.search(sentence_pattern, importance_string)
+    
+    if sentence:
+        sentence = sentence.group()
+    
+    score = re.search(digit_pattern, sentence)
+    
+    if score:
+        score = int(score.group())
+        return score
+    
+    return 0
+    
