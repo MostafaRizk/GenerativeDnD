@@ -36,4 +36,13 @@ def get_score_from_importance_string(importance_string):
         return score
     
     return 0
+
+def normalize(x, minimum, maximum):
+    return (x - minimum) / (maximum - minimum)
+
+def seconds_to_hours(seconds):
+    return seconds/60/60
+
+def exponential_decay(rate, time):
+    return (1-rate)**time
     

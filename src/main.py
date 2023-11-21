@@ -21,7 +21,13 @@ if __name__ == "__main__":
         name_sequence = name_sequence + " and " + characters[-1].name
         return name_sequence
 
-    setup = f"It is a quiet day and the Red Olive lobby is completely silent. Nobody is around save for {list_characters(characters)}"
+    default_setup = f"It is a quiet day and the Red Olive lobby is completely silent. Nobody is around save for {list_characters(characters)}"
+
+    setup = input("Set the scene for your interaction. Press enter to use the default: ")
+    if setup == "":
+        setup = default_setup
+    
+    print()
     print(setup)
     print()
     
