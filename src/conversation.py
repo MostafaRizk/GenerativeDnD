@@ -71,7 +71,6 @@ class Conversation():
         for character in self.characters:
             if type(character) != PlayerCharacter:
                 character.store_memory(observation, importance)
-
     
     def is_player_next(self):
         next_speaker = self.characters[self.current_speaker_index]

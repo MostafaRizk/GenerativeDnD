@@ -45,4 +45,15 @@ def seconds_to_hours(seconds):
 
 def exponential_decay(rate, time):
     return (1-rate)**time
-    
+
+def get_queries_from_question_string(question_string):
+    question_pattern = r'[A-Z].*\?'
+    queries = re.findall(question_pattern, question_string)
+
+    return queries
+
+def get_insights_from_insight_string(insight_string):
+    insight_pattern = r'[A-Z].*\.'
+    insights = re.findall(insight_pattern, insight_string)
+
+    return insights

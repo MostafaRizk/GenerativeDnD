@@ -12,12 +12,13 @@ if __name__ == "__main__":
     client = chromadb.PersistentClient(path=os.path.join(os.getcwd(),"memory"))
     
     assistant = Assistant(assistant_model)#Assistant.remote(assistant_model)
-    characters = [PlayerCharacter("assets/players/Lorde_Moofilton.json"), 
-                  #NonPlayerCharacter("assets/characters/Bazza_Summerwood.json", model, assistant), 
-                  NonPlayerCharacter("assets/characters/Leanah_Rasteti.json", model, assistant, client)]
+    characters = [#PlayerCharacter("assets/players/Lorde_Moofilton.json"), 
+                  NonPlayerCharacter("assets/characters/Bazza_Summerwood.json", model, assistant, client), 
+                  NonPlayerCharacter("assets/characters/Leanah_Rasteti.json", model, assistant, client)
+                 ]
 
     def list_characters(characters):
-        name_sequence = ",".join([character.name for character in characters[:-1]])
+        name_sequence = ", ".join([character.name for character in characters[:-1]])
         name_sequence = name_sequence + " and " + characters[-1].name
         return name_sequence
 
@@ -31,13 +32,17 @@ if __name__ == "__main__":
     print(setup)
     print()
     print("--------")
-    print(characters[1].description)
+    for character in characters:
+        if type(character) == NonPlayerCharacter:
+            #assistant.reflect_for_character(character)
+            print(character.description)
+            print()
     print("--------")
     
     conversation = Conversation(characters, setup)
     conversation.store_observation(observation=setup, importance=1)
 
-    for i in range(1000):
+    while True:
         speaker = conversation.get_speaker()
         
         if conversation.is_player_next():
@@ -54,3 +59,4 @@ if __name__ == "__main__":
         observation = assistant.get_observation_for_character(conv_buffer, speaker)
         importance = assistant.get_importance(observation)
         conversation.store_observation(observation, importance)
+        assistant.try_to_reflect_for_character(speaker)

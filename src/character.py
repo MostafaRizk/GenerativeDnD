@@ -3,7 +3,6 @@ import os
 import chromadb
 import uuid
 from llm import LLM
-from assistant import Assistant
 from collections import deque
 from datetime import datetime
 from helpers import *
@@ -72,6 +71,10 @@ class NonPlayerCharacter(Character):
         self.RELEVANCE_WEIGHT = 1
         self.RECENCY_WEIGHT = 1
 
+        # Constants and variables for reflection
+        self.NUM_MEMORIES = 100
+        self.importance_tally = 0
+
         self.description = self.generate_description()
         self.system_message = f"{self.roleplay_prompt}{self.description}"
         self.chat_history = deque([self.system_message])
@@ -90,7 +93,7 @@ class NonPlayerCharacter(Character):
         memories = self.retrieve_memories(self.name)
         memories.sort(key = lambda x: x[1]) # Sort by memory creation date
         facts = "\n".join([memories[i][2] for i in range(len(memories))])
-        print(facts)
+        #print(facts)
         summary = self.assistant.get_character_summary_from_bio(self.name, facts)
         return summary
     
@@ -113,16 +116,19 @@ class NonPlayerCharacter(Character):
                         "citations": ""} for _ in range(len(facts))],
             ids=[str(uuid.uuid4()) for _ in range(len(facts))])
     
-    def store_memory(self, memory, importance):
+    def store_memory(self, memory, importance, memory_type="observation"):
         current_datetime = str(datetime.now())
         self.collection.add(
             documents=[memory],
             metadatas=[{"created_at": current_datetime, 
                         "accessed_at": current_datetime,
-                        "type": "observation",
+                        "type": memory_type,
                         "importance": importance,
                         "citations": ""}],
             ids=[str(uuid.uuid4())])
+        
+        if memory_type == "observation":
+            self.importance_tally += importance
     
     def retrieve_memories(self, query):
         """Retrieve memories from database according to a calculated retrieval score
@@ -135,9 +141,9 @@ class NonPlayerCharacter(Character):
         """
         all_memories = self.collection.query(query_texts=[query],
                                              n_results=self.collection.count())
-        pairings = [None]*self.collection.count()
+        pairings = [None]*len(all_memories['documents'][0])
         
-        for i in range(self.collection.count()):
+        for i in range(len(all_memories['documents'][0])):
             # Normalise relevance score
             try:
                 relevance = 1 / all_memories['distances'][0][i]
@@ -155,7 +161,7 @@ class NonPlayerCharacter(Character):
 
             # Calculate weighted sum and store in 'retrieval'
             retrieval_score = self.RELEVANCE_WEIGHT*relevance + self.IMPORTANCE_WEIGHT*importance + self.RECENCY_WEIGHT*recency
-            pairings[i] = (retrieval_score, all_memories['metadatas'][0][i]['created_at'], all_memories['documents'][0][i], i)
+            pairings[i] = (retrieval_score, all_memories['metadatas'][0][i]['created_at'], all_memories['documents'][0][i], i, all_memories['ids'][0][i])
         
         # Sort by retrieval
         pairings.sort(reverse=True)
@@ -173,6 +179,32 @@ class NonPlayerCharacter(Character):
             ids=[all_memories['ids'][0][result[3]]])
         
         return results
+    
+    def get_most_recent_memories(self, num_memories=None):
+        """Retrieves the n most recent memories of this character
+
+        Args:
+            num_memories (int, optional): The number of memories to retrieve. Defaults to self.NUM_MEMORIES.
+
+        Returns:
+            deque: A deque containing all n memories
+        """
+        if num_memories == None:
+            num_memories = self.NUM_MEMORIES
+        
+        all_memories = self.collection.get()
+        pairings = [None]*len(all_memories['documents'])
+        
+        for i in range(len(all_memories['documents'])):
+            created_at = all_memories['metadatas'][i]['created_at']
+            created_at = datetime.strptime(created_at, self.TIME_FORMAT)
+            pairings[i] = (created_at, all_memories['documents'][i])
+        
+        pairings.sort(reverse=True)
+        pairings = pairings[:num_memories][::-1]
+        memories = deque([{"role": "system", "content": f"{pairings[i][1]}"} for i in range(len(pairings))])
+
+        return memories
 
     def speak(self):
         retrieved_memories = self.retrieve_memories(f"{self.chat_history[-1]['character']}: {self.chat_history[-1]['content']}")
@@ -185,8 +217,7 @@ class NonPlayerCharacter(Character):
             try:
                 message = self.model.inference_from_history(memory_list + list(self.chat_history), self.name, inference_type="character")
                 done = True
-            except Exception as error:
-                #print(error)
+            except RuntimeError:
                 self.chat_history.popleft()
                 self.chat_history.popleft()
                 self.add_system_message()

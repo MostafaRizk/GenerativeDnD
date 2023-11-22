@@ -2,6 +2,7 @@ from helpers import *
 import ray
 from datetime import datetime
 from collections import deque
+from character import NonPlayerCharacter
 
 #@ray.remote
 class Assistant():
@@ -12,6 +13,8 @@ class Assistant():
         self.planning_system_message = "You are a helpful AI assistant. Your job is to write itineraries for people's days"
         self.summary_system_message = "You are a helpful AI assistant. Your job is to summarise text."
         self.name = "assistant"
+
+        self.REFLECTION_THRESHOLD = 100
     
     def get_character_summary_from_bio(self, name, bio):
         prompt = f"{name} is a character in a Dungeons and Dragons style medieval fantasy world. Write a summary of who {name} is as a person, based on the below information. Focus on their background, defining experiences, and personality. Keep it succinct: \n\n {bio}"
@@ -55,6 +58,79 @@ class Assistant():
         score = get_score_from_importance_string(response)
         return score
     
+    def get_most_salient_questions(self, character):
+        history = character.get_most_recent_memories()
+
+        # Get 3 questions
+        prompt = f"""Given only the information above, what are the 3 most salient, high-level questions we can answer about the subjects in the statements? Format your answer as follows:
+        
+        1. Question 1
+        2. Question 2
+        3. Question 3
+        """
+
+        history.append({"role": "user", "content": f"{prompt}", "character": f"user"})
+        done = False
+        
+        while not done:
+            try:
+                result = self.model.inference_from_history(history, self.name, inference_type="summary")
+                done = True
+            except RuntimeError:
+                history.popleft()
+        
+        # for h in history:
+        #     print(h['content'])
+        # print()
+        
+        return get_queries_from_question_string(result)
+    
+    def get_high_level_insights(self, queries, character):
+        insights = []
+        for query in queries:
+            memory_pairings = character.retrieve_memories(query)
+            history = deque([{"role": "system", "content": f"{i}. {memory_pairings[i][2]}"} for i in range(len(memory_pairings))])
+
+            # for h in history:
+            #     print(h['content'])
+            # print()
+
+            prompt = f"""What 5 high-level insights can {character.name} infer about themselves from the combined knowledge of the above statements? Express each insight succinctly in a single sentence. Format your response as follows:
+            
+            1. {character.name} is X
+            2. {character.name} has Y
+            etc.
+            """
+            
+            history.append({"role": "user", "content": f"{prompt}", "character": f"user"})
+            done = False
+        
+            while not done:
+                try:
+                    result = self.model.inference_from_history(history, self.name, inference_type="summary")
+                    done = True
+                except RuntimeError:
+                    history.popleft()
+
+            insights += get_insights_from_insight_string(result)
+        
+        return insights
+    
+    def reflect_for_character(self, character):
+        print(f"----REFLECTING FOR {character.name}----")
+        queries = self.get_most_salient_questions(character)
+        insights = self.get_high_level_insights(queries, character)
+        
+        for insight in insights:
+            character.store_memory(memory=insight, importance=9, memory_type="reflection")
+        
+        character.update_description()
+        character.importance_tally = 0
+    
+    def try_to_reflect_for_character(self, character):
+        if type(character) == NonPlayerCharacter and character.importance_tally >= self.REFLECTION_THRESHOLD:
+            self.reflect_for_character(character)
+
     def get_plan_for_character_helper(self, character, date):
         prompt = f""""
         {character.name} is a character in a Dungeons and Dragons-style fantasy world.
