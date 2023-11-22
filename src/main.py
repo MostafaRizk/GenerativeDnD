@@ -12,7 +12,7 @@ if __name__ == "__main__":
     client = chromadb.PersistentClient(path=os.path.join(os.getcwd(),"memory"))
     
     assistant = Assistant(assistant_model)#Assistant.remote(assistant_model)
-    characters = [#PlayerCharacter("assets/players/Lorde_Moofilton.json"), 
+    characters = [PlayerCharacter("assets/players/Lorde_Moofilton.json"), 
                   NonPlayerCharacter("assets/characters/Bazza_Summerwood.json", model, assistant, client), 
                   NonPlayerCharacter("assets/characters/Leanah_Rasteti.json", model, assistant, client)
                  ]
