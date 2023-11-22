@@ -35,7 +35,7 @@ class PlayerCharacter(Character):
         pass
 
 class NonPlayerCharacter(Character):
-    roleplay_prompt = "Roleplay as a Dungeons and Dragons character with the following description: "
+    roleplay_prompt = "Roleplay as a Dungeons and Dragons character, in a medieval fantasy world, with the following character description: "
     
     def __init__(self, bio_file, model, assistant, client, world_file="assets/world_info.json"):
         Character.__init__(self, bio_file)
@@ -81,12 +81,24 @@ class NonPlayerCharacter(Character):
         self.chat_history.appendleft({"role": "system", "content": f"{self.system_message}"})
 
     def generate_description(self):
-        facts = "\n".join([self.bio["initial_appearance"]] + self.bio['initial_facts'])
+        """Get a description of the character based on the facts stored in their database
+
+        Returns:
+            string: A short text excerpt summarising who the character is as a person
+        """
+        #facts = "\n".join([self.bio["initial_appearance"]] + self.bio['initial_facts'])
+        memories = self.retrieve_memories(self.name)
+        memories.sort(key = lambda x: x[1]) # Sort by memory creation date
+        facts = "\n".join([memories[i][2] for i in range(len(memories))])
+        print(facts)
         summary = self.assistant.get_character_summary_from_bio(self.name, facts)
-        # print("------")
-        # print(summary)
-        # print("------")
         return summary
+    
+    def update_description(self):
+        self.description = self.generate_description()
+        self.system_message = f"{self.roleplay_prompt}{self.description}"
+        self.chat_history.popleft()
+        self.add_system_message()
     
     def initialise_memory(self):
         facts = [self.bio["initial_appearance"]] + self.bio['initial_facts'] + self.world_info["common_knowledge"]
@@ -112,12 +124,6 @@ class NonPlayerCharacter(Character):
                         "citations": ""}],
             ids=[str(uuid.uuid4())])
     
-    def update_description(self):
-        self.description = self.generate_description()
-        self.system_message = f"{self.roleplay_prompt}{self.description}"
-        self.chat_history.popleft()
-        self.add_system_message()
-    
     def retrieve_memories(self, query):
         """Retrieve memories from database according to a calculated retrieval score
 
@@ -133,7 +139,10 @@ class NonPlayerCharacter(Character):
         
         for i in range(self.collection.count()):
             # Normalise relevance score
-            relevance = all_memories['distances'][0][i]
+            try:
+                relevance = 1 / all_memories['distances'][0][i]
+            except ZeroDivisionError:
+                relevance = 1
             # Normalise importance score
             importance = all_memories['metadatas'][0][i]['importance'] / 10
             # Normalise recency score
@@ -146,24 +155,27 @@ class NonPlayerCharacter(Character):
 
             # Calculate weighted sum and store in 'retrieval'
             retrieval_score = self.RELEVANCE_WEIGHT*relevance + self.IMPORTANCE_WEIGHT*importance + self.RECENCY_WEIGHT*recency
-            pairings[i] = (retrieval_score, all_memories['metadatas'][0][i]['created_at'], all_memories['documents'][0][i])
+            pairings[i] = (retrieval_score, all_memories['metadatas'][0][i]['created_at'], all_memories['documents'][0][i], i)
         
         # Sort by retrieval
         pairings.sort(reverse=True)
         
         # Get top n
-        return pairings[:self.history_allocation]
+        results = pairings[:self.history_allocation]
+
+        for result in results:
+            self.collection.upsert(documents=[all_memories['documents'][0][result[3]]],
+            metadatas=[{"created_at": all_memories['metadatas'][0][result[3]]['created_at'], 
+                        "accessed_at": str(current_time),
+                        "type": all_memories['metadatas'][0][result[3]]['type'],
+                        "importance": all_memories['metadatas'][0][result[3]]['importance'],
+                        "citations": ""}],
+            ids=[all_memories['ids'][0][result[3]]])
+        
+        return results
 
     def speak(self):
-        # retrieved_memories = self.collection.query(query_texts=[self.chat_history[-1]['content']],
-        #                       n_results=self.history_allocation)
-        # memories = retrieved_memories['documents'][0]
-        # timestamps = [retrieved_memories['metadatas'][0][i]['created_at'] for i in range(len(memories))]
-        # memory_tuples = [(timestamps[i], memories[i]) for i in range(len(memories))]
-        # memory_tuples.sort()
-        # memory_list = [{"role": "system", "content": f"{memory_tuples[i][1]}", "character": ""} for i in range(len(memory_tuples))]
-
-        retrieved_memories = self.retrieve_memories(self.chat_history[-1]['content'])
+        retrieved_memories = self.retrieve_memories(f"{self.chat_history[-1]['character']}: {self.chat_history[-1]['content']}")
         retrieved_memories.sort(key = lambda x: x[1]) # Sort by memory creation date
         memory_list = [{"role": "system", "content": f"{retrieved_memories[i][2]}", "character": ""} for i in range(len(retrieved_memories))]
 

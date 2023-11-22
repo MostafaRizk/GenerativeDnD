@@ -30,6 +30,9 @@ if __name__ == "__main__":
     print()
     print(setup)
     print()
+    print("--------")
+    print(characters[1].description)
+    print("--------")
     
     conversation = Conversation(characters, setup)
     conversation.store_observation(observation=setup, importance=1)

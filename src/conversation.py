@@ -47,7 +47,13 @@ class Conversation():
     def generate_next_message(self):
         character = self.characters[self.current_speaker_index]
         response = character.speak()
-        self.conversation_buffer.append({"role": "assistant", "content": f"{response}", "character": f"{character.name}"})
+        
+        if type(character) == PlayerCharacter:
+            role = "user"
+        else:
+            role = "assistant"
+
+        self.conversation_buffer.append({"role": f"{role}", "content": f"{response}", "character": f"{character.name}"})
 
         for other_character in self.characters:
             if other_character != character:

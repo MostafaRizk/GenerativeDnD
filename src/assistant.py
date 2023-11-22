@@ -14,7 +14,7 @@ class Assistant():
         self.name = "assistant"
     
     def get_character_summary_from_bio(self, name, bio):
-        prompt = f"Write a summary of {name} based on the following information: \n\n {bio}"
+        prompt = f"{name} is a character in a Dungeons and Dragons style medieval fantasy world. Write a summary of who {name} is as a person, based on the below information. Focus on their background, defining experiences, and personality. Keep it succinct: \n\n {bio}"
         history = [
                     {"role": "system", "content": f"{self.summary_system_message}"},
                     {"role": "user", "content": f"{prompt}", "character": f"user"}
