@@ -12,10 +12,51 @@ if __name__ == "__main__":
     client = chromadb.PersistentClient(path=os.path.join(os.getcwd(),"memory"))
     
     assistant = Assistant(assistant_model)#Assistant.remote(assistant_model)
-    characters = [PlayerCharacter("assets/players/Lorde_Moofilton.json"), 
-                  NonPlayerCharacter("assets/characters/Bazza_Summerwood.json", model, assistant, client), 
-                  NonPlayerCharacter("assets/characters/Leanah_Rasteti.json", model, assistant, client)
-                 ]
+
+    characters = []
+    print("Select what characters you want in this conversation")
+    print()
+    done = False
+    counter = 1
+
+    while not done:
+        print(f"Character {counter}")
+        player_or_npc= input("Enter 'p' if this character is a player. Enter 'n' if they are an NPC. Press Enter to quit\n")
+
+        if player_or_npc == "":
+            done = True
+        
+        elif player_or_npc == "p" or player_or_npc == "n":
+            if player_or_npc == "p":
+                pc_name = input("Enter player character name\n")
+                
+                try:
+                    player = "_".join(pc_name.split(" "))
+                    characters.append(PlayerCharacter(f"assets/players/{player}.json"))
+                    counter += 1
+                
+                except:
+                    print("Invalid player name")
+            
+            elif player_or_npc == "n":
+                npc_name = input("Enter NPC name\n")
+                
+                try:
+                    npc = "_".join(npc_name.split(" "))
+                    characters.append(NonPlayerCharacter(f"assets/characters/{npc}.json", model, assistant, client))
+                    counter += 1
+                
+                except:
+                    print("Invalid character name")
+        
+        else:
+            print("Invalid selection")
+
+    
+    # characters = [PlayerCharacter("assets/players/Lorde_Moofilton.json"), 
+    #               NonPlayerCharacter("assets/characters/Bazza_Summerwood.json", model, assistant, client), 
+    #               NonPlayerCharacter("assets/characters/Leanah_Rasteti.json", model, assistant, client)
+    #              ]
 
     def list_characters(characters):
         name_sequence = ", ".join([character.name for character in characters[:-1]])
