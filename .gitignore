@@ -161,3 +161,5 @@ cython_debug/
 Pipfile.lock
 .python-version
 src/memory/
+src/assets/experimental_players/
+src/assets/experimental_characters/

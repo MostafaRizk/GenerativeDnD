@@ -72,6 +72,24 @@ class Conversation():
             if type(character) != PlayerCharacter:
                 character.store_memory(observation, importance)
     
+    def store_appearances(self, appearance_dict):
+        """Allows each character to observe the appearances of the other characters when they enter into a conversation.
+        This means including it in the chat history and storing it in their database.
+
+        Args:
+            appearance_dict (dictionary): A dictionary where the keys are character objects and the values are tuples of appearance and importance
+        """
+        for character in self.characters:
+            appearance, importance = appearance_dict[character]
+            # Debugging
+            print(appearance, importance)
+            for other_character in self.characters:
+                if other_character != character and type(other_character) == NonPlayerCharacter:
+                    other_character.listen(appearance, "", "system")
+                    other_character.store_memory(appearance, importance)
+        
+        print()
+    
     def is_player_next(self):
         next_speaker = self.characters[self.current_speaker_index]
         if type(next_speaker) == PlayerCharacter:

@@ -7,8 +7,9 @@ from assistant import Assistant
 from conversation import Conversation
 
 if __name__ == "__main__":
-    model = LLM(file="mistral_params.json")
-    assistant_model = model#LLM(file="mistral_params.json")
+    model = LLM()
+    #model = LLM(file="mistral_params.json")
+    assistant_model = model
     client = chromadb.PersistentClient(path=os.path.join(os.getcwd(),"memory"))
     
     assistant = Assistant(assistant_model)#Assistant.remote(assistant_model)
@@ -21,12 +22,12 @@ if __name__ == "__main__":
 
     while not done:
         print(f"Character {counter}")
-        player_or_npc= input("Enter 'p' if this character is a player. Enter 'n' if they are an NPC. Press Enter to quit\n")
+        player_or_npc= input("Enter 'p' if this character is a player. Enter 'n' if they are an NPC. Use 'ep' and 'en' for experimental players and NPCs. Press Enter to quit\n")
 
         if player_or_npc == "":
             done = True
         
-        elif player_or_npc == "p" or player_or_npc == "n":
+        elif player_or_npc == "p" or player_or_npc == "n" or player_or_npc == "ep" or player_or_npc == "en":
             if player_or_npc == "p":
                 pc_name = input("Enter player character name\n")
                 
@@ -44,6 +45,28 @@ if __name__ == "__main__":
                 try:
                     npc = "_".join(npc_name.split(" "))
                     characters.append(NonPlayerCharacter(f"assets/characters/{npc}.json", model, assistant, client))
+                    counter += 1
+                
+                except:
+                    print("Invalid character name")
+            
+            elif player_or_npc == "ep":
+                pc_name = input("Enter player character name\n")
+                
+                try:
+                    player = "_".join(pc_name.split(" "))
+                    characters.append(PlayerCharacter(f"assets/experimental_players/{player}.json"))
+                    counter += 1
+                
+                except:
+                    print("Invalid player name")
+            
+            elif player_or_npc == "en":
+                npc_name = input("Enter NPC name\n")
+                
+                try:
+                    npc = "_".join(npc_name.split(" "))
+                    characters.append(NonPlayerCharacter(f"assets/experimental_characters/{npc}.json", model, assistant, client))
                     counter += 1
                 
                 except:
@@ -82,6 +105,15 @@ if __name__ == "__main__":
     
     conversation = Conversation(characters, setup)
     conversation.store_observation(observation=setup, importance=1)
+
+    # Let every character see the others
+    appearance_dict = {}
+    for character in characters:
+        appearance = character.appearance
+        importance = assistant.get_importance(appearance)
+        appearance_dict[character] = (appearance, importance)
+    
+    conversation.store_appearances(appearance_dict)
 
     while True:
         speaker = conversation.get_speaker()
