@@ -26,7 +26,7 @@ class PlayerCharacter(Character):
     def __init__(self, bio_file):
         Character.__init__(self, bio_file)
     
-    def speak(self):
+    def speak(self, other_characters=None, observations=None, character_observation=None, date_and_time=None):
         response = input()
         return response
 
@@ -46,7 +46,7 @@ class NonPlayerCharacter(Character):
         self.name = self.bio["name"]
 
         self.client = client
-        self.collection_name = "_".join([word.lower() for word in self.name.split()])
+        self.collection_name = "_".join([word.lower() for word in self.name.split()]).replace('\'', '')
         context_size = model.context_size
         tokens_per_observation = model.observation_size
         
@@ -95,6 +95,11 @@ class NonPlayerCharacter(Character):
         facts = "\n".join([memories[i][2] for i in range(len(memories))])
         #print(facts)
         summary = self.assistant.get_character_summary_from_bio(self.name, facts)
+        last_newline = summary.rfind('\n')
+        last_full_stop = summary.rfind('.')
+        cutoff_index = max(last_newline, last_full_stop)
+        summary = summary[:cutoff_index]
+
         return summary
     
     def update_description(self):
@@ -206,7 +211,34 @@ class NonPlayerCharacter(Character):
 
         return memories
 
-    def speak(self):
+    def get_context_for_observed_entity(self, observed_entity_name, observation):
+        """Given an entity that the character observes and an observation about the entity's current state, generates relevant context from the character's memory
+        For example, if the character sees their friend and observes that friend to be drinking tea, this function will retrieve all memories relating to the character's relationship with 
+        that friend and the observation of them drinking tea. It will then summarise the combined memories.
+
+        Args:
+            observed_entity_name (string): The name of the entity being observed e.g. a character's name or an object
+            observation (string): A description of the observation made by the character regarding this
+
+        Returns:
+            string: The summarised context
+        """
+        query1 = f"What is {self.name}'s relationship with {observed_entity_name}?"
+        query2 = observation
+        retrieved_memories = self.retrieve_memories(query1) + self.retrieve_memories(query2)
+        retrieved_memories.sort(key = lambda x: x[1]) # Sort by memory creation date
+        memory_list = [retrieved_memories[i][2] for i in range(len(retrieved_memories))]
+        memory_string = "\n".join(memory_list)
+        context = self.assistant.summarise_context(memory_string, self.name, observed_entity_name)
+        
+        return context
+    
+    def vanilla_speech(self):
+        """Generate the character's next utterance using a bunch of retrieved memories taking up half the context combined with however much of the chat history fits  
+
+        Returns:
+            str: The utterance of the character
+        """
         retrieved_memories = self.retrieve_memories(f"{self.chat_history[-1]['character']}: {self.chat_history[-1]['content']}")
         retrieved_memories.sort(key = lambda x: x[1]) # Sort by memory creation date
         memory_list = [{"role": "system", "content": f"{retrieved_memories[i][2]}", "character": ""} for i in range(len(retrieved_memories))]
@@ -228,6 +260,65 @@ class NonPlayerCharacter(Character):
 
         self.chat_history.append({"role": "assistant", "content": f"{message}", "character": f"{self.name}"})
         return message
+    
+    def conditioned_speech(self, other_characters, observations, character_observation, date_and_time):
+        """Generate the character's next utterance by conditioning the prompt on the summary of the relevant context relating to what is currently happening.
+        For example, if they are speaking to character A, they retrieve the relevant context about that character from their memories and put that in the context of the prompt   
+
+        Returns:
+            str: The utterance of the character
+        """
+        
+        assert len(other_characters) == len(observations), "The number of characters and observations must be the same"
+        assert self not in other_characters, "Character can not be included in their own conditioned speech function call"
+
+        retrieved_memories = self.retrieve_memories(f"{self.chat_history[-1]['character']}: {self.chat_history[-1]['content']}")
+        retrieved_memories.sort(key = lambda x: x[1]) # Sort by memory creation date
+        memory_list = [{"role": "system", "content": f"{retrieved_memories[i][2]}", "character": ""} for i in range(len(retrieved_memories))]
+
+        context = []
+        
+        for i in range(len(other_characters)):
+            name = other_characters[i].name
+            obs = observations[i]
+            context.append(self.get_context_for_observed_entity(name, obs))
+        
+        context = "\n\n".join(context)
+        #observations = "\n\n".join(observations)
+
+        context_string = f"""
+        It is {date_and_time}.
+        {context}"""
+
+        print("-----------------------")
+        print(context_string)
+        print("-----------------------")
+
+        memory_list.append({"role": "system", "content": f"{context_string}", "character": ""})
+
+        done = False
+        
+        while not done:
+            try:
+                message = self.model.inference_from_history(memory_list + list(self.chat_history), self.name, inference_type="character")
+                done = True
+            except RuntimeError:
+                self.chat_history.popleft()
+                self.chat_history.popleft()
+                self.add_system_message()
+        
+        cutoff_index = message.find("\n")
+        if cutoff_index != -1:
+            message = message[:cutoff_index]
+
+        self.chat_history.append({"role": "assistant", "content": f"{message}", "character": f"{self.name}"})
+        return message
+
+    def speak(self, other_characters=None, observations=None, character_observation=None, date_and_time=None):
+        if other_characters:
+            return self.conditioned_speech(other_characters, observations, character_observation, date_and_time)
+        else:
+            return self.vanilla_speech()
     
     def listen(self, content, other_character_name, other_role):
         message = {"role": f"{other_role}", "content": f"{content}", "character": f"{other_character_name}"}

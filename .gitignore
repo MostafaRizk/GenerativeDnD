@@ -163,3 +163,4 @@ Pipfile.lock
 src/memory/
 src/assets/experimental_players/
 src/assets/experimental_characters/
+src/assets/start_time.txt

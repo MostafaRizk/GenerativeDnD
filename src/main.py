@@ -5,10 +5,21 @@ from character import NonPlayerCharacter, PlayerCharacter
 from llm import LLM
 from assistant import Assistant
 from conversation import Conversation
+from datetime import datetime
+
+TIME_SPEEDUP = 6
+DATE_FORMAT = '%A %d %B %Y, %I:%M %p'
+WORLD_START = datetime.strptime("Monday 1 January 1303, 8:00 AM", DATE_FORMAT)
+
+
+def list_characters(characters):
+        name_sequence = ", ".join([character.name for character in characters[:-1]])
+        name_sequence = name_sequence + " and " + characters[-1].name
+        return name_sequence
 
 if __name__ == "__main__":
-    model = LLM()
-    #model = LLM(file="mistral_params.json")
+    #model = LLM()
+    model = LLM(file="mistral_params.json")
     assistant_model = model
     client = chromadb.PersistentClient(path=os.path.join(os.getcwd(),"memory"))
     
@@ -69,8 +80,9 @@ if __name__ == "__main__":
                     characters.append(NonPlayerCharacter(f"assets/experimental_characters/{npc}.json", model, assistant, client))
                     counter += 1
                 
-                except:
+                except Exception as error:
                     print("Invalid character name")
+                    print(error)
         
         else:
             print("Invalid selection")
@@ -80,11 +92,6 @@ if __name__ == "__main__":
     #               NonPlayerCharacter("assets/characters/Bazza_Summerwood.json", model, assistant, client), 
     #               NonPlayerCharacter("assets/characters/Leanah_Rasteti.json", model, assistant, client)
     #              ]
-
-    def list_characters(characters):
-        name_sequence = ", ".join([character.name for character in characters[:-1]])
-        name_sequence = name_sequence + " and " + characters[-1].name
-        return name_sequence
 
     default_setup = f"It is a quiet day and the Red Olive lobby is completely silent. Nobody is around save for {list_characters(characters)}"
 
@@ -115,21 +122,42 @@ if __name__ == "__main__":
     
     conversation.store_appearances(appearance_dict)
 
+    # Get or set world creation time
+    start_time_path = "assets/start_time.txt"
+
+    if os.path.isfile(start_time_path):
+        f = open(start_time_path, "r")
+        raw_text = f.read()
+        f.close()
+        start_time = datetime.strptime(raw_text, DATE_FORMAT)
+    
+    else:
+        start_time = datetime.now()
+        f = open(start_time_path, 'w+')
+        f.write(datetime.strftime(start_time, DATE_FORMAT))
+        f.close()
+
     while True:
+        # Update time
+        current_time = datetime.now()
+        diff = current_time-start_time
+        current_world_time = WORLD_START + diff*TIME_SPEEDUP
+        current_world_time = datetime.strftime(current_world_time, DATE_FORMAT)
+
         speaker = conversation.get_speaker()
         
         if conversation.is_player_next():
             name = conversation.get_speaker_name()
             print(f"{name}: ", end="")
-            conversation.generate_next_message()
+            conversation.generate_next_message(current_world_time)
             
         else:
-            name, response = conversation.generate_next_message()
+            name, response = conversation.generate_next_message(current_world_time)
             print(f"{name}: {response}")
         
         print()
         conv_buffer = conversation.get_conversation_buffer()
         observation = assistant.get_observation_for_character(conv_buffer, speaker)
         importance = assistant.get_importance(observation)
-        conversation.store_observation(observation, importance)
+        conversation.store_observation(observation, importance, speaker)
         assistant.try_to_reflect_for_character(speaker)

@@ -7,7 +7,7 @@ from character import NonPlayerCharacter, PlayerCharacter, Character
 from llm import LLM
 from assistant import Assistant
 from datetime import datetime
-from collections import deque
+from collections import deque, defaultdict
 
 class Conversation():
     def __init__(self, characters, setup):
@@ -22,6 +22,7 @@ class Conversation():
         self.current_speaker_index = 0
         self.buffer_size = 1
         self.conversation_buffer = deque(maxlen=len(characters)*self.buffer_size)
+        self.observations = defaultdict(str)
 
         for character in self.characters:
             character.listen(setup, "", "system")
@@ -31,12 +32,14 @@ class Conversation():
         assert character not in self.characters, "The character must not already be in the conversation"
 
         self.characters.append(character)
+        self.observations[character.name] = ""
     
     def remove_character(self, character):
         assert character in self.characters, "The character is not in the conversation"
         
         index_to_remove = self.characters.index(character)
         self.characters.remove(index_to_remove)
+        del self.observations[character.name]
 
         if self.current_speaker_index == index_to_remove:
             self.current_speaker_index %= len(self.characters)
@@ -44,9 +47,14 @@ class Conversation():
         elif self.current_speaker_index > index_to_remove:
             self.current_speaker_index -= 1
     
-    def generate_next_message(self):
+    def generate_next_message(self, date_and_time):
         character = self.characters[self.current_speaker_index]
-        response = character.speak()
+        
+        other_characters = [c for c in self.characters if c != character]
+        observations = [self.observations[c.name] for c in self.characters if c != character]
+        character_observation = self.observations[character.name]
+
+        response = character.speak(other_characters, observations, character_observation, date_and_time)
         
         if type(character) == PlayerCharacter:
             role = "user"
@@ -61,16 +69,16 @@ class Conversation():
 
         self.current_speaker_index += 1
         self.current_speaker_index %= len(self.characters)
-
-        #observation = self.assistant.get_observation_for_character(self.conversation_buffer, character)
-        #importance = "N/A" #self.assistant.get_importance(observation)
         
         return character.name, response
     
-    def store_observation(self, observation, importance):
+    def store_observation(self, observation, importance, observed_character=None):
         for character in self.characters:
             if type(character) != PlayerCharacter:
                 character.store_memory(observation, importance)
+        
+        if observed_character:
+            self.observations[observed_character.name] = observation
     
     def store_appearances(self, appearance_dict):
         """Allows each character to observe the appearances of the other characters when they enter into a conversation.

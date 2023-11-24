@@ -8,3 +8,4 @@ decision = input("Type 'I am sure' if you are sure you want to delete the databa
 
 if decision == "I am sure":
     client.reset()
+    os.remove("assets/start_time.txt")

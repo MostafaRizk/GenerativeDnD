@@ -14,15 +14,34 @@ class Assistant():
         self.summary_system_message = "You are a helpful AI assistant. Your job is to summarise text."
         self.name = "assistant"
 
-        self.REFLECTION_THRESHOLD = 100
+        self.REFLECTION_THRESHOLD = 300
     
     def get_character_summary_from_bio(self, name, bio):
-        prompt = f"{name} is a character in a Dungeons and Dragons style medieval fantasy world. Write a summary of who {name} is as a person, based on the below information. Focus on their background, defining experiences, and personality. Keep it succinct: \n\n {bio}"
+        prompt = f"{name} is a character in a Dungeons and Dragons style medieval fantasy world. Write a summary of who {name} is as a person, based ONLY on the below information. Focus on their personality, defining experiences, and how they interact with people. Keep it succinct and do not fabricate any information: \n\n {bio}"
         history = [
                     {"role": "system", "content": f"{self.summary_system_message}"},
                     {"role": "user", "content": f"{prompt}", "character": f"user"}
                 ]
         return self.model.inference_from_history(history, self.name, inference_type="summary")
+    
+    def respond_to_query(self, query, facts):
+        prompt = f"{facts}\n\n{query}"
+        
+        history = [
+                    {"role": "system", "content": f"{self.summary_system_message}"},
+                    {"role": "user", "content": f"{prompt}", "character": f"user"}
+                ]
+        return self.model.inference_from_history(history, self.name, inference_type="summary")
+
+    def summarise_context(self, facts, character_name, entity_name):
+        prompt = f"{facts}\n\nSummarize the above information about {character_name} and {entity_name} succinctly and directly, without any filler."
+        
+        history = [
+                    {"role": "system", "content": f"{self.summary_system_message}"},
+                    {"role": "user", "content": f"{prompt}", "character": f"user"}
+                ]
+        return self.model.inference_from_history(history, self.name, inference_type="summary")           
+
     
     def get_observation_for_character(self, messages, character):
         prompt = f"""Describe in one sentence what {character.name} did and said in the previous text. Only describe what others can perceive, not {character.name}'s internal state and do not fabricate any information. 
@@ -137,7 +156,7 @@ class Assistant():
 
         {character.description}
 
-        Today is {date}. Write a broad strokes plan for {character.name}'s upcoming day from when they wake up until they sleep. 
+        It is {date}. Write a broad strokes plan for {character.name}'s upcoming day from when they wake up until they sleep. 
         Write an itinerary with 5-10 tasks and their start times. Keep each item in the itinerary succinct. Format it as follows:
 
         1) Wake up at X:XXam
