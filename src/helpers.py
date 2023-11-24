@@ -13,12 +13,15 @@ def get_plan_from_plan_string(plan_string):
         time = re.search(time_pattern, item)
 
         if task and time:
-            plan.append((task.group(), time.group()))
+            plan.append((task.group(), time.group().upper()))
     
     if len(plan) > 0:
         return plan
     else:
         raise TypeError("Plan string had an invalid format")
+
+def get_plan_string_from_deque(plan_deque):
+    return "\n".join([p[0] for p in plan_deque])
 
 def get_score_from_importance_string(importance_string):
     sentence_pattern = r'The importance is \d{1,2}.'

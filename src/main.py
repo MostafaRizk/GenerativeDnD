@@ -6,6 +6,7 @@ from llm import LLM
 from assistant import Assistant
 from conversation import Conversation
 from datetime import datetime
+from helpers import *
 
 TIME_SPEEDUP = 6
 DATE_FORMAT = '%A %d %B %Y, %I:%M %p'
@@ -16,6 +17,12 @@ def list_characters(characters):
         name_sequence = ", ".join([character.name for character in characters[:-1]])
         name_sequence = name_sequence + " and " + characters[-1].name
         return name_sequence
+
+def make_plans_for_characters(characters):
+    for character in characters:
+        if type(character) == NonPlayerCharacter:
+            plan = assistant.get_plan_for_character(character, current_world_time)
+            character.set_plan(plan)
 
 if __name__ == "__main__":
     #model = LLM()
@@ -123,7 +130,7 @@ if __name__ == "__main__":
     conversation.store_appearances(appearance_dict)
 
     # Get or set world creation time
-    start_time_path = "assets/start_time.txt"
+    start_time_path = "assets/start_time.txt" #TODO: This path should be an environment variable or something
 
     if os.path.isfile(start_time_path):
         f = open(start_time_path, "r")
@@ -137,6 +144,8 @@ if __name__ == "__main__":
         f.write(datetime.strftime(start_time, DATE_FORMAT))
         f.close()
 
+    last_plan_made = None
+
     while True:
         # Update time
         current_time = datetime.now()
@@ -144,15 +153,25 @@ if __name__ == "__main__":
         current_world_time = WORLD_START + diff*TIME_SPEEDUP
         current_world_time = datetime.strftime(current_world_time, DATE_FORMAT)
 
+        if not last_plan_made:
+            make_plans_for_characters(characters)
+            last_plan_made = current_world_time
+        
+        else:
+            time_since_last_plan = datetime.strptime(current_world_time, DATE_FORMAT) - datetime.strptime(last_plan_made, DATE_FORMAT)
+            if time_since_last_plan.days > 0:
+                make_plans_for_characters(characters)
+                last_plan_made = current_world_time
+
         speaker = conversation.get_speaker()
         
         if conversation.is_player_next():
             name = conversation.get_speaker_name()
             print(f"{name}: ", end="")
-            conversation.generate_next_message(current_world_time)
+            conversation.generate_next_message(datetime.strptime(current_world_time, DATE_FORMAT))
             
         else:
-            name, response = conversation.generate_next_message(current_world_time)
+            name, response = conversation.generate_next_message(datetime.strptime(current_world_time, DATE_FORMAT))
             print(f"{name}: {response}")
         
         print()

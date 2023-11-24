@@ -5,6 +5,7 @@ from datetime import datetime
 from llm import LLM 
 from character import PlayerCharacter, NonPlayerCharacter
 from assistant import Assistant
+from helpers import *
 
 def run_time_loop():
     TIME_SPEEDUP = 6
@@ -93,14 +94,44 @@ def get_character_list():
     
     return characters
 
+def test_context():
+    character_list = get_character_list()
+    print()
+
+    entity_name = "Lorde Moofilton"
+    entity_observation = "Lorde Moofilton is bench-pressing a horse"
+
+    for character in character_list:
+        if type(character) == NonPlayerCharacter:
+            print(f"{character.name}'s opinion:")
+            print(character.get_context_for_observed_entity(entity_name, entity_observation))
+            print()
+
+
+TIME_SPEEDUP = 6
+
+start_time = datetime.now()
+world_start = "Monday 1 January 1303, 8:00 PM"
+date_format = '%A %d %B %Y, %I:%M %p'
+world_start = datetime.strptime(world_start, date_format)
 character_list = get_character_list()
 print()
 
-entity_name = "Lorde Moofilton"
-entity_observation = "Lorde Moofilton is bench-pressing a horse"
+while True:
+    dummy = input("Press Enter to continue")
+    print()
+    current_time = datetime.now()
+    diff = current_time-start_time
 
-for character in character_list:
-    if type(character) == NonPlayerCharacter:
-        print(f"{character.name}'s opinion:")
-        print(character.get_context_for_observed_entity(entity_name, entity_observation))
-        print()
+    current_world_time = world_start + diff*TIME_SPEEDUP
+    current_world_time = datetime.strftime(current_world_time, '%A %d %B %Y, %I:%M %p')
+
+    for character in character_list:
+        if type(character) == NonPlayerCharacter:
+            print(f"{character.name}'s plan:")
+            plan = assistant.get_plan_for_character(character, current_world_time)
+            plan_string = get_plan_string_from_deque(plan)
+            print(plan_string)
+            print()
+
+    

@@ -78,7 +78,13 @@ class NonPlayerCharacter(Character):
         self.description = self.generate_description()
         self.system_message = f"{self.roleplay_prompt}{self.description}"
         self.chat_history = deque([self.system_message])
-        self.plan = []
+        
+        # Planning
+        self.plan = deque()
+        self.DEFAULT_TASK = f"{self.name} has nothing on their schedule right now"
+        self.current_task = self.DEFAULT_TASK
+        self.ITINERARY_TIME_FORMAT = "%I:%M%p"
+        self.DATE_AND_TIME_FORMAT = '%A %d %B %Y, %I:%M %p'
     
     def add_system_message(self):
         self.chat_history.appendleft({"role": "system", "content": f"{self.system_message}"})
@@ -261,7 +267,7 @@ class NonPlayerCharacter(Character):
         self.chat_history.append({"role": "assistant", "content": f"{message}", "character": f"{self.name}"})
         return message
     
-    def conditioned_speech(self, other_characters, observations, character_observation, date_and_time):
+    def conditioned_speech(self, all_characters, observations, character_observation, date_and_time):
         """Generate the character's next utterance by conditioning the prompt on the summary of the relevant context relating to what is currently happening.
         For example, if they are speaking to character A, they retrieve the relevant context about that character from their memories and put that in the context of the prompt   
 
@@ -269,8 +275,8 @@ class NonPlayerCharacter(Character):
             str: The utterance of the character
         """
         
-        assert len(other_characters) == len(observations), "The number of characters and observations must be the same"
-        assert self not in other_characters, "Character can not be included in their own conditioned speech function call"
+        assert len(all_characters) == len(observations), "The number of characters and observations must be the same"
+        #assert self not in other_characters, "Character can not be included in their own conditioned speech function call"
 
         retrieved_memories = self.retrieve_memories(f"{self.chat_history[-1]['character']}: {self.chat_history[-1]['content']}")
         retrieved_memories.sort(key = lambda x: x[1]) # Sort by memory creation date
@@ -278,17 +284,21 @@ class NonPlayerCharacter(Character):
 
         context = []
         
-        for i in range(len(other_characters)):
-            name = other_characters[i].name
+        for i in range(len(all_characters)):
+            name = all_characters[i].name
             obs = observations[i]
             context.append(self.get_context_for_observed_entity(name, obs))
         
+        if len(context) == 0:
+            context.append(f"{self.name} sees absolutely nobody around. {self.name} is completely alone.")
+        
         context = "\n\n".join(context)
         #observations = "\n\n".join(observations)
+        self.update_current_task(date_and_time)
+        speech_prompt = f"Given {self.name}'s scheduled task and the current situation, what does {self.name} say/do next?"
+        speech_prompt = [{"role": "system", "content": f"{speech_prompt}", "character": ""}]
 
-        context_string = f"""
-        It is {date_and_time}.
-        {context}"""
+        context_string = f"""It is {datetime.strftime(date_and_time, self.DATE_AND_TIME_FORMAT)}.\n\n{self.name}'s currently scheduled task is:\n\n{self.current_task}\n\n{context}"""
 
         print("-----------------------")
         print(context_string)
@@ -300,7 +310,7 @@ class NonPlayerCharacter(Character):
         
         while not done:
             try:
-                message = self.model.inference_from_history(memory_list + list(self.chat_history), self.name, inference_type="character")
+                message = self.model.inference_from_history(memory_list + list(self.chat_history) + speech_prompt, self.name, inference_type="character")
                 done = True
             except RuntimeError:
                 self.chat_history.popleft()
@@ -315,14 +325,34 @@ class NonPlayerCharacter(Character):
         return message
 
     def speak(self, other_characters=None, observations=None, character_observation=None, date_and_time=None):
-        if other_characters:
-            return self.conditioned_speech(other_characters, observations, character_observation, date_and_time)
-        else:
-            return self.vanilla_speech()
+        return self.conditioned_speech(other_characters, observations, character_observation, date_and_time)
     
     def listen(self, content, other_character_name, other_role):
         message = {"role": f"{other_role}", "content": f"{content}", "character": f"{other_character_name}"}
         self.chat_history.append(message)
+    
+    def set_plan(self, plan):
+        assert type(plan) == deque, "Plan must be a deque object"
+        self.plan = plan
+    
+    def update_current_task(self, current_time):
+        if len(self.plan) == 0:
+            self.current_task = self.DEFAULT_TASK
+        
+        current_time = datetime.strftime(current_time, self.ITINERARY_TIME_FORMAT)
+        current_time = datetime.strptime(current_time, self.ITINERARY_TIME_FORMAT)
+        
+        done = False
+
+        while not done and len(self.plan) > 0:
+            top_task, top_time = self.plan[0]
+            top_time = datetime.strptime(top_time, self.ITINERARY_TIME_FORMAT)
+
+            if top_time < current_time:
+                self.plan.popleft()
+                self.current_task = top_task
+            else:
+                done = True
 
 if __name__ == "__main__":
     model = LLM()

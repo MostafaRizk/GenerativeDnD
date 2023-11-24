@@ -172,7 +172,7 @@ class Assistant():
                 ]
         return self.model.inference_from_history(history, self.name, inference_type="planner")
     
-    def get_plan_for_character(self, character, date="Monday January 1"):
+    def get_plan_for_character(self, character, date):
         done = False
         
         while not done:
