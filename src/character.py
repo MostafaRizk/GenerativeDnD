@@ -238,6 +238,26 @@ class NonPlayerCharacter(Character):
         context = self.assistant.summarise_context(memory_string, self.name, observed_entity_name)
         
         return context
+
+    def get_context_for_observed_entities(self, observed_entity_names, observations):
+        retrieved_memories = []
+        
+        for i in range(len(observed_entity_names)):
+            query1 = f"What is {self.name}'s relationship with {observed_entity_names[i]}?"
+            query2 = observations[i]
+
+            for mem in self.retrieve_memories(query1):
+                retrieved_memories.append(mem)
+            
+            for mem in self.retrieve_memories(query2):
+                retrieved_memories.append(mem)
+        
+        retrieved_memories.sort(key = lambda x: x[1]) # Sort by memory creation date
+        memory_list = [retrieved_memories[i][2] for i in range(len(retrieved_memories))]
+        memory_string = "\n".join(memory_list)
+        context = self.assistant.summarise_context(memory_string, list_entities(observed_entity_names))
+        
+        return context
     
     def vanilla_speech(self):
         """Generate the character's next utterance using a bunch of retrieved memories taking up half the context combined with however much of the chat history fits  
@@ -284,12 +304,10 @@ class NonPlayerCharacter(Character):
 
         context = []
         
-        for i in range(len(all_characters)):
-            name = all_characters[i].name
-            obs = observations[i]
-            context.append(self.get_context_for_observed_entity(name, obs))
+        names = [c.name for c in all_characters]
+        context.append(self.get_context_for_observed_entities(names, observations))
         
-        if len(context) <= 1:
+        if len(all_characters) <= 1:
             context.append(f"{self.name} sees absolutely nobody around. {self.name} is completely alone.")
         
         context = "\n\n".join(context)

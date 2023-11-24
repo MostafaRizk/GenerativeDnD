@@ -2,9 +2,8 @@ import json
 import os
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
-#from ray import serve
+from auto_gptq import exllama_set_max_input_length
 
-#@serve.deployment
 class LLM():
     def __init__(self, config_path="configs", file="thespis_params.json"):
         current_path = os.getcwd()
@@ -19,6 +18,8 @@ class LLM():
                                                     device_map=self.params["device_map"],
                                                     trust_remote_code=bool(self.params["trust_remote_code"]),
                                                     revision=self.params["revision"])
+        
+        self.model = exllama_set_max_input_length(self.model, self.context_size)
 
         self.tokenizer = AutoTokenizer.from_pretrained(self.params["model_name"], use_fast=bool(self.params["use_fast"]))
         chat_template_file = os.path.join(current_path, config_path, self.params["chat_template"])

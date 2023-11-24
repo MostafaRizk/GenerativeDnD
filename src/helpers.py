@@ -60,3 +60,19 @@ def get_insights_from_insight_string(insight_string):
     insights = re.findall(insight_pattern, insight_string)
 
     return insights
+
+def list_characters(characters):
+    if len(characters) == 1:
+        return characters[0].name
+    
+    name_sequence = ", ".join([character.name for character in characters[:-1]])
+    name_sequence = name_sequence + " and " + characters[-1].name
+    return name_sequence
+
+def list_entities(entity_names):
+    if len(entity_names) == 1:
+        return entity_names[0]
+    
+    name_sequence = ", ".join([e for e in entity_names[:-1]])
+    name_sequence = name_sequence + " and " + entity_names[-1]
+    return name_sequence

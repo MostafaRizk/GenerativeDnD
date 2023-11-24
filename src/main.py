@@ -12,12 +12,6 @@ TIME_SPEEDUP = 6
 DATE_FORMAT = '%A %d %B %Y, %I:%M %p'
 WORLD_START = datetime.strptime("Monday 1 January 1303, 8:00 AM", DATE_FORMAT)
 
-
-def list_characters(characters):
-        name_sequence = ", ".join([character.name for character in characters[:-1]])
-        name_sequence = name_sequence + " and " + characters[-1].name
-        return name_sequence
-
 def make_plans_for_characters(characters):
     for character in characters:
         if type(character) == NonPlayerCharacter:

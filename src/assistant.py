@@ -33,8 +33,8 @@ class Assistant():
                 ]
         return self.model.inference_from_history(history, self.name, inference_type="summary")
 
-    def summarise_context(self, facts, character_name, entity_name):
-        prompt = f"{facts}\n\nSummarize the above information about {character_name} and {entity_name} succinctly and directly, without any filler."
+    def summarise_context(self, facts, entities):
+        prompt = f"{facts}\n\nSummarize the above information about {entities} succinctly and directly, without any filler."
         
         history = [
                     {"role": "system", "content": f"{self.summary_system_message}"},
