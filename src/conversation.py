@@ -50,11 +50,10 @@ class Conversation():
     def generate_next_message(self, date_and_time):
         character = self.characters[self.current_speaker_index]
         
-        other_characters = [c for c in self.characters if c != character]
-        observations = [self.observations[c.name] for c in self.characters if c != character]
-        character_observation = self.observations[character.name]
+        all_characters = [c for c in self.characters]
+        observations = [self.observations[c.name] for c in self.characters]
 
-        response = character.speak(other_characters, observations, character_observation, date_and_time)
+        response = character.speak(all_characters, observations, date_and_time)
         
         if type(character) == PlayerCharacter:
             role = "user"

@@ -267,7 +267,7 @@ class NonPlayerCharacter(Character):
         self.chat_history.append({"role": "assistant", "content": f"{message}", "character": f"{self.name}"})
         return message
     
-    def conditioned_speech(self, all_characters, observations, character_observation, date_and_time):
+    def conditioned_speech(self, all_characters, observations, date_and_time):
         """Generate the character's next utterance by conditioning the prompt on the summary of the relevant context relating to what is currently happening.
         For example, if they are speaking to character A, they retrieve the relevant context about that character from their memories and put that in the context of the prompt   
 
@@ -289,7 +289,7 @@ class NonPlayerCharacter(Character):
             obs = observations[i]
             context.append(self.get_context_for_observed_entity(name, obs))
         
-        if len(context) == 0:
+        if len(context) <= 1:
             context.append(f"{self.name} sees absolutely nobody around. {self.name} is completely alone.")
         
         context = "\n\n".join(context)
@@ -324,8 +324,8 @@ class NonPlayerCharacter(Character):
         self.chat_history.append({"role": "assistant", "content": f"{message}", "character": f"{self.name}"})
         return message
 
-    def speak(self, other_characters=None, observations=None, character_observation=None, date_and_time=None):
-        return self.conditioned_speech(other_characters, observations, character_observation, date_and_time)
+    def speak(self, other_characters=None, observations=None, date_and_time=None):
+        return self.conditioned_speech(other_characters, observations, date_and_time)
     
     def listen(self, content, other_character_name, other_role):
         message = {"role": f"{other_role}", "content": f"{content}", "character": f"{other_character_name}"}
