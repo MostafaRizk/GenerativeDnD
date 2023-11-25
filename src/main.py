@@ -192,7 +192,7 @@ if __name__ == "__main__":
         assistant.try_to_reflect_for_character(speaker)
 
         if type(speaker) == NonPlayerCharacter:
-            desired_location = assistant.get_desired_location(speaker, speaker.description, world, response)
+            desired_location = assistant.get_desired_location(speaker, speaker.description, world, conv_buffer)
             print("****************")
             print(desired_location)
             print("****************")
