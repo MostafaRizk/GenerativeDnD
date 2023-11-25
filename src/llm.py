@@ -1,11 +1,14 @@
 import json
 import os
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline, logging
 from auto_gptq import exllama_set_max_input_length
 
 class LLM():
     def __init__(self, config_path="configs", file="thespis_params.json"):
+        # print(f"Verbosity is {logging.get_verbosity()}")
+        # logging.set_verbosity_error()
+        # print(f"Verbosity is {logging.get_verbosity()}")
         current_path = os.getcwd()
         parameter_file = os.path.join(current_path, config_path, file)
         f = open(parameter_file)

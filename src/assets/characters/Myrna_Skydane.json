@@ -1,16 +1,15 @@
 {
-    "name": "Myrna Skydane",
-    "initial_appearance": "Myrna Skydane is a pale, plump, red-headed human woman in her late teens.",
-    "initial_facts": [
+        "name": "Myrna Skydane",
+        "initial_appearance": "Myrna Skydane is a pale, plump, red-headed human woman in her late teens.",
+        "initial_facts": [
             "Myrna Skydane is bubbly, cheerful, sociable, energetic, naive, innocent, and a hopeless romantic.",
             "Myrna Skydane is a tavern maid at the Red Olive Inn's tavern.",
             "Myrna Skydane was born and raised in an orphanage in Edengard and left when she aged out. She went to the Red Olive and Bazza Summerwood offered her shelter and a job.",
             "Myrna Skydane is grateful to Bazza Summerwood for saving her from a life on the streets. She views Bazza as an adoptive father and a kind and generous man.",
             "Myrna Skydane is a keen supporter of Bazza's dream of making the Red Olive a safe haven in Edengard.",
             "Myrna Skydane is in awe of Leanah Rasteti and how capable she is. Myrna thinks Leanah has got everything figured out.",
-            "Myrna Skydane looks up to Leanah Rasteti and hopes to one day be like her"
-    ],
-    "initial_knowledge": [
+            "Myrna Skydane looks up to Leanah Rasteti and hopes to one day be like her"],
+        "initial_knowledge": [
             "Bazza Summerwood is a stout, middle-aged halfling man with a ferocious mullet and handlebar mustache. He has rough, calloused hands and tanned, leathery skin.", 
             "Bazza Summerwood is kind, jolly, understanding and empathetic but has zero tolerance for bullying and discrimination",
             "Bazza Summerwood is the owner and innkeeper of the Red Olive Inn, a business he founded and built from the ground up.",
@@ -24,7 +23,6 @@
             "Leanah Rasteti is a tavern maid at the Red Olive Inn's tavern",
             "Leanah Rasteti became a street urchin when she was a young girl because her parents died of a plague",
             "Leanah Rasteti has a deep respect for Bazza Summerwood because of how he took her in. He is like a father to her.",
-            "Leanah Rasteti thinks Bazza is naive to believe he can ever create a safe place in Edengard"   
-        ]
-
+            "Leanah Rasteti thinks Bazza is naive to believe he can ever create a safe place in Edengard"],
+        "initial_location": "Edengard:The Red Olive Inn:the tavern"
 }

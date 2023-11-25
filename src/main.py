@@ -7,6 +7,7 @@ from assistant import Assistant
 from conversation import Conversation
 from datetime import datetime
 from helpers import *
+from world import World
 
 TIME_SPEEDUP = 6
 DATE_FORMAT = '%A %d %B %Y, %I:%M %p'
@@ -32,6 +33,11 @@ if __name__ == "__main__":
     done = False
     counter = 1
 
+    # World setup
+    WORLD_PATH = "assets/world_map.json"
+    world = World(WORLD_PATH)
+    character_locations = {}
+
     while not done:
         print(f"Character {counter}")
         player_or_npc= input("Enter 'p' if this character is a player. Enter 'n' if they are an NPC. Use 'ep' and 'en' for experimental players and NPCs. Press Enter to quit\n")
@@ -45,7 +51,8 @@ if __name__ == "__main__":
                 
                 try:
                     player = "_".join(pc_name.split(" "))
-                    characters.append(PlayerCharacter(f"assets/players/{player}.json"))
+                    characters.append(PlayerCharacter(f"assets/players/{player}.json", world))
+                    character_locations[characters[-1].name] = characters[-1].location
                     counter += 1
                 
                 except:
@@ -56,10 +63,12 @@ if __name__ == "__main__":
                 
                 try:
                     npc = "_".join(npc_name.split(" "))
-                    characters.append(NonPlayerCharacter(f"assets/characters/{npc}.json", model, assistant, client))
+                    characters.append(NonPlayerCharacter(f"assets/characters/{npc}.json", model, assistant, client, world))
+                    character_locations[characters[-1].name] = characters[-1].location
                     counter += 1
                 
-                except:
+                except Exception as error:
+                    print(error)
                     print("Invalid character name")
             
             elif player_or_npc == "ep":
@@ -67,7 +76,8 @@ if __name__ == "__main__":
                 
                 try:
                     player = "_".join(pc_name.split(" "))
-                    characters.append(PlayerCharacter(f"assets/experimental_players/{player}.json"))
+                    characters.append(PlayerCharacter(f"assets/experimental_players/{player}.json", world))
+                    character_locations[characters[-1].name] = characters[-1].location
                     counter += 1
                 
                 except:
@@ -78,7 +88,8 @@ if __name__ == "__main__":
                 
                 try:
                     npc = "_".join(npc_name.split(" "))
-                    characters.append(NonPlayerCharacter(f"assets/experimental_characters/{npc}.json", model, assistant, client))
+                    characters.append(NonPlayerCharacter(f"assets/experimental_characters/{npc}.json", model, assistant, client, world))
+                    character_locations[characters[-1].name] = characters[-1].location
                     counter += 1
                 
                 except Exception as error:
@@ -94,7 +105,12 @@ if __name__ == "__main__":
     #               NonPlayerCharacter("assets/characters/Leanah_Rasteti.json", model, assistant, client)
     #              ]
 
-    default_setup = f"It is a quiet day and the Red Olive lobby is completely silent. Nobody is around save for {list_characters(characters)}"
+    default_setup = []
+    for c in characters:
+        verbose_location_string, _, _, _ = world.get_location_context_for_character(c)
+        default_setup.append(verbose_location_string)
+    
+    default_setup = ". ".join(default_setup)
 
     setup = input("Set the scene for your interaction. Press enter to use the default: ")
     if setup == "":
@@ -174,3 +190,9 @@ if __name__ == "__main__":
         importance = assistant.get_importance(observation)
         conversation.store_observation(observation, importance, speaker)
         assistant.try_to_reflect_for_character(speaker)
+
+        if type(speaker) == NonPlayerCharacter:
+            desired_location = assistant.get_desired_location(speaker, speaker.description, world, response)
+            print("****************")
+            print(desired_location)
+            print("****************")

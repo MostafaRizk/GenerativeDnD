@@ -1,0 +1,48 @@
+{
+    "name": "Edengard",
+    "description": "A quaint town at the northernmost tip of the Crimson Isles, south of Moofiltonia.",
+    "children": [
+        {
+            "name": "The Red Olive Inn",
+            "description": "A rustic three-story building made of cobblestone and accented with timber. A weathered sign hangs above a timber door and reads 'The Red Olive Inn'.",
+            "children": [
+                {
+                    "name": "the lobby",
+                    "description": "A quaint room with a large window, providing natural light. There are a few doors leading to adjacent rooms. A reception desk is placed against the back wall.",
+                    "children": []
+                },
+                {
+                    "name": "the tavern",
+                    "description": "A typical, cosy tavern. The center of the room has many round, wooden tables, the right side of the room has several booths, the left side of the room has a small stage and there is a bar counter against the back wall.",
+                    "children": []
+                },
+                {
+                    "name": "Bazza's office",
+                    "description": "A small room with a desk in the middle. A painting of a family of halflings rests on the back wall. A few pieces of parchment litter the desk.",
+                    "children": []
+                }
+            ]
+        },
+        {
+            "name": "Bhelram's General Store",
+            "description": "A small shop that appears to sell anything and everything including food, clothes, and essential supplies.",
+            "children": [
+                {
+                    "name": "the lobby",
+                    "description": "A cosy but cluttered room with shelves and racks featuring every type of day to day good imaginable. There is a booth in the middle for paying the clerk.",
+                    "children": []
+                },
+                {
+                    "name": "the staff room",
+                    "description": "A small dimly-lit room with cargo boxes stacked all around the rim.",
+                    "children": []
+                },
+                {
+                    "name": "Bhelram's room",
+                    "description": "A minimalist bedroom with a single bed, featuring ornately decorated metal dwarven bedposts, and the bare essential furniture.",
+                    "children": []
+                }
+            ]
+        }
+    ]
+}

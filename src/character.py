@@ -8,12 +8,14 @@ from datetime import datetime
 from helpers import *
 
 class Character():
-    def __init__(self, bio_file):
+    def __init__(self, bio_file, world):
         f = open(bio_file)
         self.bio = json.load(f)
         f.close()
         self.name = self.bio["name"]
         self.appearance = self.bio["initial_appearance"]
+        self.location = self.bio["initial_location"]
+        self.world = world
     
     def speak(self):
         pass
@@ -23,8 +25,8 @@ class Character():
 
 
 class PlayerCharacter(Character):
-    def __init__(self, bio_file):
-        Character.__init__(self, bio_file)
+    def __init__(self, bio_file, world):
+        Character.__init__(self, bio_file, world)
     
     def speak(self, other_characters=None, observations=None, character_observation=None, date_and_time=None):
         response = input()
@@ -36,11 +38,11 @@ class PlayerCharacter(Character):
 class NonPlayerCharacter(Character):
     roleplay_prompt = "Roleplay as a Dungeons and Dragons character, in a medieval fantasy world, with the following character description: "
     
-    def __init__(self, bio_file, model, assistant, client, world_file="assets/world_info.json"):
-        Character.__init__(self, bio_file)
+    def __init__(self, bio_file, model, assistant, client, world, world_facts_file="assets/world_info.json"):
+        Character.__init__(self, bio_file, world)
         self.model = model
         self.assistant = assistant
-        f = open(world_file)
+        f = open(world_facts_file)
         self.world_info = json.load(f)
         f.close()
         self.name = self.bio["name"]
@@ -313,14 +315,15 @@ class NonPlayerCharacter(Character):
         context = "\n\n".join(context)
         #observations = "\n\n".join(observations)
         self.update_current_task(date_and_time)
+        verbose_location_string, _, _, _ = self.world.get_location_context_for_character(self)
         speech_prompt = f"Given {self.name}'s scheduled task and the current situation, what does {self.name} say/do next?"
         speech_prompt = [{"role": "system", "content": f"{speech_prompt}", "character": ""}]
 
-        context_string = f"""It is {datetime.strftime(date_and_time, self.DATE_AND_TIME_FORMAT)}.\n\n{self.name}'s currently scheduled task is:\n\n{self.current_task}\n\n{context}"""
+        context_string = f"""It is {datetime.strftime(date_and_time, self.DATE_AND_TIME_FORMAT)}.\n\n{self.name}'s currently scheduled task is:\n\n{self.current_task}\n\n{verbose_location_string}\n\n{context}"""
 
-        print("-----------------------")
-        print(context_string)
-        print("-----------------------")
+        # print("-----------------------")
+        # print(context_string)
+        # print("-----------------------")
 
         memory_list.append({"role": "system", "content": f"{context_string}", "character": ""})
 
