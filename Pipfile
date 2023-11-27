@@ -10,6 +10,8 @@ optimum = "1.14.0"
 ray = "2.8.0"
 chromadb = "0.4.17"
 uuid = "1.30"
+jupyter = "*"
+scipy = "1.11.4"
 
 [dev-packages]
 

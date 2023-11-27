@@ -8,4 +8,3 @@ from character import PlayerCharacter, NonPlayerCharacter
 from assistant import Assistant
 from helpers import *
 from collections import deque
-

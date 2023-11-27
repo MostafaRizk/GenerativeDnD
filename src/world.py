@@ -82,3 +82,38 @@ class World:
         known_locations_string = f"{character.name} knows about the following locations in {self.world_tree.name}: {list_entities(known_locations)}"
         
         return verbose_location_string, adjacent_locations_string, location_observation_string, known_locations_string
+    
+    def get_list_of_known_locations(self, character):
+        loc_node = self.get_node_from_location_string(character.location)
+        world_locations = [l.name for l in self.world_tree.children]
+
+        return world_locations
+    
+    def get_list_of_adjacent_locations(self, character):
+        loc_node = self.get_node_from_location_string(character.location)
+        adjacent_locations = self.get_siblings_from_node(loc_node)
+
+        return adjacent_locations
+    
+    def find_first_leaf(self, location_name):
+        correct_parent = None
+        name = [self.world_tree.name]
+        
+        # Find child of world tree with this location name
+        for child in self.world_tree.children:
+            if child.name == location_name:
+                name.append(child.name)
+                correct_parent = child
+                break
+
+        # Get the first leaf node and return the full location name
+        if correct_parent:
+            curr = correct_parent
+
+            while len(curr.children) > 0:
+                name.append(curr.children[0].name)
+                curr = curr.children[0]
+            
+            return ":".join(name)
+        
+        return None

@@ -66,6 +66,12 @@ class LLM():
             top_k=self.params["planner_params"]["top_k"],
             repetition_penalty=self.params["planner_params"]["repetition_penalty"]
             )
+        
+        self.embedding_pipe = pipeline(
+            "feature-extraction",
+            model=self.model,
+            tokenizer=self.tokenizer
+        )
     
     def inference_from_history(self, history, character_name, inference_type):
         if self.assistant_token == "":
@@ -85,6 +91,10 @@ class LLM():
         torch.cuda.empty_cache()
 
         return result
+    
+    def get_utterance_embedding(self, utterance):
+        max_tokens = self.params["character_params"]["max_new_tokens"]
+        return self.embedding_pipe(utterance, tokenize_kwargs ={'padding': 'max_length', 'max_length': max_tokens})[0]
 
 if __name__ == "__main__":
     llm = LLM()

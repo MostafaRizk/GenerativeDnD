@@ -178,7 +178,7 @@ if __name__ == "__main__":
         if conversation.is_player_next():
             name = conversation.get_speaker_name()
             print(f"{name}: ", end="")
-            conversation.generate_next_message(datetime.strptime(current_world_time, DATE_FORMAT))
+            _, response = conversation.generate_next_message(datetime.strptime(current_world_time, DATE_FORMAT))
             
         else:
             name, response = conversation.generate_next_message(datetime.strptime(current_world_time, DATE_FORMAT))
@@ -191,8 +191,10 @@ if __name__ == "__main__":
         conversation.store_observation(observation, importance, speaker)
         assistant.try_to_reflect_for_character(speaker)
 
-        if type(speaker) == NonPlayerCharacter:
-            desired_location = assistant.get_desired_location(speaker, speaker.description, world, conv_buffer)
-            print("****************")
-            print(desired_location)
-            print("****************")
+        location = assistant.get_location(speaker, world, conv_buffer)
+        if location and location != speaker.location:
+            speaker.location = location
+            character_locations[speaker.name] = location
+        print("****************")
+        print(speaker.location)
+        print("****************")

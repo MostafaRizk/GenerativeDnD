@@ -1,10 +1,10 @@
 from helpers import *
-import ray
 from datetime import datetime
 from collections import deque
 from character import NonPlayerCharacter
+from scipy.spatial import distance
+import numpy as np
 
-#@ray.remote
 class Assistant():
     time_format = "%I:%M%p"
 
@@ -15,6 +15,10 @@ class Assistant():
         self.name = "assistant"
 
         self.REFLECTION_THRESHOLD = 300
+
+        # Location variables and constants
+        self.stationary_sentence = " is staying in their current location"
+        self.movement_sentence = " is going to a new location"
     
     def get_character_summary_from_bio(self, name, bio):
         prompt = f"{name} is a character in a Dungeons and Dragons style medieval fantasy world. Write a summary of who {name} is as a person, based ONLY on the below information. Focus on their personality, defining experiences, and how they interact with people. Keep it succinct and do not fabricate any information: \n\n {bio}"
@@ -239,7 +243,7 @@ class Assistant():
         verbose_location_string, adjacent_locations_string, location_observation_string, known_locations_string = world.get_location_context_for_character(character)
         world_context = f"{verbose_location_string}\n{adjacent_locations_string}\n{location_observation_string}\n{known_locations_string}\n"
 
-        prompt = f"""{character_summary}\n\n{world_context}\n\nBased on the above conversation, where is {character.name} now? Start your answer with '{character.name} is in...'."""
+        prompt = f"""{character_summary}\n\n{world_context}\n\nBased on the above conversation, is {character.name} going somewhere or staying where they are? Start your answer with '{character.name} is...'"""
         
         history = deque(list(recent_conversation_history))
 
@@ -247,6 +251,61 @@ class Assistant():
         history.append({"role": "user", "content": f"{prompt}", "character": f"user"})
 
         return self.model.inference_from_history(history, self.name, inference_type="summary")
+    
+    def get_location(self, character, world, conversation_buffer):
+        last_utterance = conversation_buffer[-1]["content"]
+        last_action = extract_actions_from_utterance(last_utterance)
+        full_text = "\n".join([c['content'] for c in conversation_buffer])
+
+        known_locations = world.get_list_of_known_locations(character)
+        adjacent_locations = world.get_list_of_adjacent_locations(character)
+        
+        if not hasattr(character, 'stationary_sentence'):
+            character.stationary_sentence = np.hstack(self.model.get_utterance_embedding(character.name + self.stationary_sentence))
+        
+        if not hasattr(character, "movement_sentence"):
+            character.movement_sentence = np.hstack(self.model.get_utterance_embedding(character.name + self.movement_sentence))
+        
+        action = np.hstack(self.model.get_utterance_embedding(last_action))
+        staying_probability = distance.cosine(action, character.stationary_sentence)
+        moving_probability = distance.cosine(action, character.movement_sentence)
+
+        print(f"Staying: {staying_probability}")
+        print(f"Moving: {moving_probability}")
+
+        if moving_probability > staying_probability:
+            location = None
+            
+            for loc in adjacent_locations:
+                if loc in full_text:
+                    if not location:
+                        location = loc
+                    else:
+                        location = None
+                        break
+            
+            if location:
+                location_words = character.location.split(":")
+                location_words[-1] = location
+                return ":".join(location_words)
+            
+            for loc in known_locations:
+                if loc in full_text:
+                    if not location:
+                        location = loc
+                    else:
+                        location = None
+                        break
+            
+            if location:
+                full_location_name = world.find_first_leaf(location)
+                return full_location_name
+        
+        return None
+            
+            
+            
+
 
 
 if __name__ == "__main__": 

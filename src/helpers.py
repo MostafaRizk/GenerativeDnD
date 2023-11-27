@@ -76,3 +76,10 @@ def list_entities(entity_names):
     name_sequence = ", ".join([e for e in entity_names[:-1]])
     name_sequence = name_sequence + " and " + entity_names[-1]
     return name_sequence
+
+def extract_actions_from_utterance(utterance):
+    action_pattern = r'\*(.*?)\*'
+    actions = re.findall(action_pattern, utterance)
+    for a in actions:
+        a.replace("*", "")
+    return " ".join(actions)
