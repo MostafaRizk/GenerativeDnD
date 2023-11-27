@@ -255,7 +255,8 @@ class Assistant():
     def get_location(self, character, world, conversation_buffer):
         last_utterance = conversation_buffer[-1]["content"]
         last_action = extract_actions_from_utterance(last_utterance)
-        full_text = "\n".join([c['content'] for c in conversation_buffer])
+        full_text = "\n".join([extract_actions_from_utterance(c['content']) for c in conversation_buffer])
+        print(full_text)
 
         known_locations = world.get_list_of_known_locations(character)
         adjacent_locations = world.get_list_of_adjacent_locations(character)

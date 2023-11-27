@@ -191,10 +191,10 @@ if __name__ == "__main__":
         conversation.store_observation(observation, importance, speaker)
         assistant.try_to_reflect_for_character(speaker)
 
+        print("****************")
         location = assistant.get_location(speaker, world, conv_buffer)
         if location and location != speaker.location:
             speaker.location = location
             character_locations[speaker.name] = location
-        print("****************")
         print(speaker.location)
         print("****************")

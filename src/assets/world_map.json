@@ -20,6 +20,21 @@
                     "name": "Bazza's office",
                     "description": "A small room with a desk in the middle. A painting of a family of halflings rests on the back wall. A few pieces of parchment litter the desk.",
                     "children": []
+                },
+                {
+                    "name": "Bazza's room",
+                    "description": "A cosy, rustic room filled to the brim with clutter, books, loose clothes and a few dirty dishes.",
+                    "children": []
+                },
+                {
+                    "name": "Leanah's room",
+                    "description": "A neat, minimalist room adorned with a variety of houseplants. A lute is propped up in the corner.",
+                    "children": []
+                },
+                {
+                    "name": "Myrna's room",
+                    "description": "A brightly decorated room with several vibrant paintings and knick knacks.",
+                    "children": []
                 }
             ]
         },

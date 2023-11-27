@@ -92,6 +92,8 @@ class World:
     def get_list_of_adjacent_locations(self, character):
         loc_node = self.get_node_from_location_string(character.location)
         adjacent_locations = self.get_siblings_from_node(loc_node)
+        current_location = character.location.split(":")[-1]
+        adjacent_locations.remove(current_location)
 
         return adjacent_locations
     
