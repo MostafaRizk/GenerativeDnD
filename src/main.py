@@ -34,7 +34,7 @@ if __name__ == "__main__":
     counter = 1
 
     # World setup
-    WORLD_PATH = "assets/world_map.json"
+    WORLD_PATH = "assets/experimental_world_map.json"
     world = World(WORLD_PATH)
     character_locations = {}
 
@@ -191,10 +191,10 @@ if __name__ == "__main__":
         conversation.store_observation(observation, importance, speaker)
         assistant.try_to_reflect_for_character(speaker)
 
-        print("****************")
+        #print("****************")
         location = assistant.get_location(speaker, world, conv_buffer)
         if location and location != speaker.location:
             speaker.location = location
             character_locations[speaker.name] = location
-        print(speaker.location)
-        print("****************")
+        #print(speaker.location)
+        #print("****************")

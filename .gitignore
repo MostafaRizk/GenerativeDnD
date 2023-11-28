@@ -164,3 +164,5 @@ src/memory/
 src/assets/experimental_players/
 src/assets/experimental_characters/
 src/assets/start_time.txt
+src/assets/experimental_world_map.json
+src/flagged/log.csv

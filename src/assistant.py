@@ -256,7 +256,7 @@ class Assistant():
         last_utterance = conversation_buffer[-1]["content"]
         last_action = extract_actions_from_utterance(last_utterance)
         full_text = "\n".join([extract_actions_from_utterance(c['content']) for c in conversation_buffer])
-        print(full_text)
+        #print(full_text)
 
         known_locations = world.get_list_of_known_locations(character)
         adjacent_locations = world.get_list_of_adjacent_locations(character)
@@ -271,8 +271,8 @@ class Assistant():
         staying_probability = distance.cosine(action, character.stationary_sentence)
         moving_probability = distance.cosine(action, character.movement_sentence)
 
-        print(f"Staying: {staying_probability}")
-        print(f"Moving: {moving_probability}")
+        # print(f"Staying: {staying_probability}")
+        # print(f"Moving: {moving_probability}")
 
         if moving_probability > staying_probability:
             location = None
