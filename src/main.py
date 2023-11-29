@@ -76,7 +76,7 @@ if "setup_complete" not in st.session_state:
         default_setup = ". ".join(default_setup)
         setup = default_setup
 
-        st.session_state.conversations_by_location[location] = Conversation(character_list, setup)
+        st.session_state.conversations_by_location[location] = Conversation(character_list, setup, location)
         st.session_state.conversations_by_location[location].store_observation(observation=setup, importance=1)
 
         # Let every character see the others 
