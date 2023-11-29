@@ -10,7 +10,7 @@ from datetime import datetime
 from collections import deque, defaultdict
 
 class Conversation():
-    def __init__(self, characters, setup):
+    def __init__(self, characters, setup, location):
         assert type(characters) == list, "Must pass a list of characters"
         assert len(characters) > 0, "Character list is empty"
         
@@ -26,6 +26,8 @@ class Conversation():
 
         for character in self.characters:
             character.listen(setup, "", "system")
+        
+        self.location = location
     
     def add_character(self, character):
         assert type(character) == Character, "The character must be of type Character"
@@ -89,13 +91,13 @@ class Conversation():
         for character in self.characters:
             appearance, importance = appearance_dict[character]
             # Debugging
-            print(appearance, importance)
+            #print(appearance, importance)
             for other_character in self.characters:
                 if other_character != character and type(other_character) == NonPlayerCharacter:
                     other_character.listen(appearance, "", "system")
                     other_character.store_memory(appearance, importance)
         
-        print()
+        #print()
     
     def is_player_next(self):
         next_speaker = self.characters[self.current_speaker_index]

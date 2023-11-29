@@ -1,4 +1,5 @@
 import re
+import os
 from collections import deque
 
 def get_plan_from_plan_string(plan_string):
@@ -83,3 +84,4 @@ def extract_actions_from_utterance(utterance):
     for a in actions:
         a.replace("*", "")
     return " ".join(actions)
+

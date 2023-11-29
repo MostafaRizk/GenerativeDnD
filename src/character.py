@@ -8,7 +8,7 @@ from datetime import datetime
 from helpers import *
 
 class Character():
-    def __init__(self, bio_file, world):
+    def __init__(self, bio_file, world, using_streamlit=False):
         f = open(bio_file)
         self.bio = json.load(f)
         f.close()
@@ -16,6 +16,7 @@ class Character():
         self.appearance = self.bio["initial_appearance"]
         self.location = self.bio["initial_location"]
         self.world = world
+        self.using_streamlit=using_streamlit
     
     def speak(self):
         pass
@@ -25,15 +26,23 @@ class Character():
 
 
 class PlayerCharacter(Character):
-    def __init__(self, bio_file, world):
-        Character.__init__(self, bio_file, world)
+    def __init__(self, bio_file, world, using_streamlit=False):
+        Character.__init__(self, bio_file, world, using_streamlit)
+        self.last_response = None
     
     def speak(self, other_characters=None, observations=None, character_observation=None, date_and_time=None):
-        response = input()
+        if self.using_streamlit:
+            response = self.last_response
+        else:
+            response = input()
+        
         return response
 
     def listen(self, content, other_character, other_role):
         pass
+
+    def set_last_response(self, response):
+        self.last_response = response
 
 class NonPlayerCharacter(Character):
     roleplay_prompt = "Roleplay as a Dungeons and Dragons character, in a medieval fantasy world, with the following character description: "
