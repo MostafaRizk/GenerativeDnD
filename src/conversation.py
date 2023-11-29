@@ -28,6 +28,7 @@ class Conversation():
             character.listen(setup, "", "system")
         
         self.location = location
+        self.appearance_dict = {}
     
     def add_character(self, character):
         assert type(character) == Character, "The character must be of type Character"
@@ -35,6 +36,33 @@ class Conversation():
 
         self.characters.append(character)
         self.observations[character.name] = ""
+        
+        # Grow conversation buffer
+        new_buffer = deque(maxlen=len(self.characters)*self.buffer_size)
+        while len(self.conversation_buffer) > 0:
+            new_buffer.append(self.conversation_buffer.popleft())
+        self.conversation_buffer = new_buffer
+
+        self.store_single_appearance(character, character.appearance, character.importance)
+        self.newbie_observes_appearances(character)
+
+        specific_location = self.location.split(":")[-1]
+        character_setup = f"*{character.name} enters {specific_location}*"
+
+        if type(character) == PlayerCharacter:
+            role = "user"
+        else:
+            role = "assistant"
+        
+        # The new character hears the last thing everybody said
+        # for message in self.conversation_buffer:
+        #     character.listen(message['content'], message['character'], message['role'])
+        
+        # All characters become aware of the new character walking in, including the new character
+        for existing_character in self.characters:
+            existing_character.listen(character_setup, character.name, role)
+        
+        self.conversation_buffer.append({"role": f"{role}", "content": f"{character_setup}", "character": f"{character.name}"})
     
     def remove_character(self, character):
         assert character in self.characters, "The character is not in the conversation"
@@ -48,6 +76,28 @@ class Conversation():
         
         elif self.current_speaker_index > index_to_remove:
             self.current_speaker_index -= 1
+        
+        # Shrink conversation buffer
+        new_buffer = deque(maxlen=len(self.characters)*self.buffer_size)
+        while len(self.conversation_buffer) > 0:
+            new_buffer.append(self.conversation_buffer.popleft())
+        self.conversation_buffer = new_buffer
+
+        del self.appearance_dict[character]
+
+        specific_location = self.location.split(":")[-1]
+        character_departure = f"*{character.name} leaves {specific_location}*"
+
+        if type(character) == PlayerCharacter:
+            role = "user"
+        else:
+            role = "assistant"
+        
+        # All characters become aware of the new character leaving
+        for existing_character in self.characters:
+            existing_character.listen(character_departure, character.name, role)
+        
+        self.conversation_buffer.append({"role": f"{role}", "content": f"{character_departure}", "character": f"{character.name}"})
     
     def generate_next_message(self, date_and_time):
         character = self.characters[self.current_speaker_index]
@@ -81,6 +131,21 @@ class Conversation():
         if observed_character:
             self.observations[observed_character.name] = observation
     
+    def store_single_appearance(self, character, appearance, importance):
+        """Characters already in the conversation observe a given character's appearance
+
+        Args:
+            character (Character): Character to be observed
+            appearance (str): String describing the appearance of the character to be observed
+            importance (int): Importance score associated with the character's observed appearances
+        """
+        for other_character in self.characters:
+            if other_character != character and type(other_character) == NonPlayerCharacter:
+                other_character.listen(appearance, "", "system")
+                other_character.store_memory(appearance, importance)
+                self.appearance_dict[character] = (appearance, importance)
+
+
     def store_appearances(self, appearance_dict):
         """Allows each character to observe the appearances of the other characters when they enter into a conversation.
         This means including it in the chat history and storing it in their database.
@@ -92,12 +157,21 @@ class Conversation():
             appearance, importance = appearance_dict[character]
             # Debugging
             #print(appearance, importance)
-            for other_character in self.characters:
-                if other_character != character and type(other_character) == NonPlayerCharacter:
-                    other_character.listen(appearance, "", "system")
-                    other_character.store_memory(appearance, importance)
+            self.store_single_appearance(character, appearance, importance)
         
         #print()
+    
+    def newbie_observes_appearances(self, new_character):
+        """A new character entering the conversation observes the appearances of everyone else already in the conversation
+
+        Args:
+            new_character (Character): The character entering the conversation
+        """
+        for character in self.characters:
+            if character != new_character and type(character) != NonPlayerCharacter:
+                appearance, importance = self.appearance_dict[character]
+                new_character.listen(appearance, "", "system")
+                new_character.store_memory(appearance, importance)
     
     def is_player_next(self):
         next_speaker = self.characters[self.current_speaker_index]

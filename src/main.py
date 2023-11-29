@@ -85,6 +85,7 @@ if "setup_complete" not in st.session_state:
         for character in character_list:
             appearance = character.appearance
             importance = st.session_state.assistant.get_importance(appearance)
+            character.appearance_importance = importance
             appearance_dict[character] = (appearance, importance)
         
         st.session_state.conversations_by_location[location].store_appearances(appearance_dict)

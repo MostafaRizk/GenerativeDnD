@@ -14,6 +14,7 @@ class Character():
         f.close()
         self.name = self.bio["name"]
         self.appearance = self.bio["initial_appearance"]
+        self.apperance_importance = None
         self.location = self.bio["initial_location"]
         self.world = world
         self.using_streamlit=using_streamlit
