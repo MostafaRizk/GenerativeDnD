@@ -31,7 +31,7 @@ class Conversation():
         self.appearance_dict = {}
     
     def add_character(self, character):
-        assert type(character) == Character, "The character must be of type Character"
+        #assert type(character) == Character, "The character must be of type Character"
         assert character not in self.characters, "The character must not already be in the conversation"
 
         self.characters.append(character)
@@ -43,7 +43,7 @@ class Conversation():
             new_buffer.append(self.conversation_buffer.popleft())
         self.conversation_buffer = new_buffer
 
-        self.store_single_appearance(character, character.appearance, character.importance)
+        self.store_single_appearance(character, character.appearance, character.apperance_importance)
         self.newbie_observes_appearances(character)
 
         specific_location = self.location.split(":")[-1]
@@ -68,7 +68,11 @@ class Conversation():
         assert character in self.characters, "The character is not in the conversation"
         
         index_to_remove = self.characters.index(character)
-        self.characters.remove(index_to_remove)
+        self.characters.remove(character)
+
+        if len(self.characters) == 0:
+            return
+
         del self.observations[character.name]
 
         if self.current_speaker_index == index_to_remove:

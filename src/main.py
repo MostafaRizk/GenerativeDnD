@@ -34,6 +34,61 @@ def load_characters(characters_by_location, world, character_names_file, json_pa
             
             characters_by_location[world.expand_loc_string(new_character.location)].append(new_character)
 
+def move_person(column, person, old_location, new_location):
+    expanded_new_location = st.session_state.world.expand_loc_string(new_location)
+    # Remove character from old location
+    print(f"Removing {person.name} from {old_location}")
+
+    # Debugging
+    for loc, convo in st.session_state.conversations_by_location.items():
+        print(f"The characters in the conversation at {loc} are as follows:")
+        for character in convo.characters:
+            print(character.name)
+    ####
+
+    print(f"Removing {person.name} from conversation object")
+    if person in st.session_state.conversations_by_location[old_location].characters:
+        st.session_state.conversations_by_location[old_location].remove_character(person)
+    if len(st.session_state.conversations_by_location[old_location].characters) == 0:
+        del st.session_state.conversations_by_location[old_location]
+    
+    print(f"Removing {person.name} from location dictionary")
+    if person in st.session_state.characters_by_location[old_location]:
+        st.session_state.characters_by_location[old_location].remove(person)
+    if len(st.session_state.characters_by_location[old_location]) == 0:
+        del st.session_state.characters_by_location[old_location]
+    
+    # Add character to new location
+    print(f"Adding {person.name} to {expanded_new_location}")
+    st.session_state.characters_by_location[expanded_new_location].append(person)
+    if expanded_new_location in st.session_state.conversations_by_location and person not in st.session_state.conversations_by_location[expanded_new_location].characters:
+        st.session_state.conversations_by_location[expanded_new_location].add_character(person)
+    elif expanded_new_location not in st.session_state.conversations_by_location:
+        verbose_location_string, _, _, _ = st.session_state.world.get_location_context_for_character(person)
+        st.session_state.conversations_by_location[expanded_new_location] = Conversation([person], verbose_location_string, new_location)
+    
+    person.location = new_location
+
+    # Debugging
+    for loc, convo in st.session_state.conversations_by_location.items():
+        print(f"The characters in the conversation at {loc} are as follows:")
+        for character in convo.characters:
+            print(character.name)
+    ####
+
+def dont_move_person():
+    pass
+
+def change_location_prompt(column_changing, person_moving, old_location, new_location):
+    with column_changing:
+        print("Creating buttons")
+        st.write(f"{person_moving.name} wants to go to {new_location}. Allow this?")
+        c1, c2 = st.columns(2, gap="small")
+        with c1:
+            st.button("Yes", on_click=move_person, kwargs=dict(column=column_changing, person=person_moving, old_location=old_location, new_location=new_location))
+        with c2:
+            st.button("No", on_click=dont_move_person)
+
 # Constants
 WORLD_PATH = "assets/experimental_world_map.json"
 PLAYER_PATH = "assets/players"
@@ -181,6 +236,7 @@ for location, conversation in st.session_state.conversations_by_location.items()
     print(f"{speaker.name} is speaking")
             
     if conversation.is_player_next():
+        print("Player's turn")
         # st.write(f"It is {speaker.name}'s turn to speak")
         # st.write(f"{speaker.name} is in {speaker.location}")
         name = conversation.get_speaker_name()
@@ -191,7 +247,8 @@ for location, conversation in st.session_state.conversations_by_location.items()
             conversation.generate_next_message(datetime.strptime(st.session_state.current_world_time, DATE_FORMAT))
             if response:
                 #st.session_state.messages[location].append({"role": "user", "content": response, "character": speaker.name})
-                display_messages(location_to_col[location], name, response, player_flag=True)
+                with location_to_col[location]:
+                    display_messages(location_to_col[location], name, response, player_flag=True)
             
             while not conversation.is_player_next():
                 name, response = conversation.generate_next_message(datetime.strptime(st.session_state.current_world_time, DATE_FORMAT))
@@ -210,9 +267,15 @@ for location, conversation in st.session_state.conversations_by_location.items()
     conversation.store_observation(observation, importance, speaker)
     st.session_state.assistant.try_to_reflect_for_character(speaker)
 
-    #location = st.session_state.assistant.get_location(speaker, st.session_state.world, conv_buffer)
-    # if location and location != speaker.location:
-    #     speaker.location = location
-    #     character_locations[speaker.name] = location
+    new_location = st.session_state.assistant.get_location(speaker, st.session_state.world, conv_buffer)
+    if new_location and new_location != speaker.location:
+        # Debugging
+        for loc, convo in st.session_state.conversations_by_location.items():
+            print(f"The characters in the conversation at {loc} are as follows:")
+            for character in convo.characters:
+                print(character.name)
+        ###
+        
+        change_location_prompt(location_to_col[location], speaker, location, new_location)
 
 
