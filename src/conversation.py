@@ -63,6 +63,9 @@ class Conversation():
             existing_character.listen(character_setup, character.name, role)
         
         self.conversation_buffer.append({"role": f"{role}", "content": f"{character_setup}", "character": f"{character.name}"})
+
+        for c in self.characters:
+            c.conversational_context = []
     
     def remove_character(self, character):
         assert character in self.characters, "The character is not in the conversation"
@@ -102,6 +105,9 @@ class Conversation():
             existing_character.listen(character_departure, character.name, role)
         
         self.conversation_buffer.append({"role": f"{role}", "content": f"{character_departure}", "character": f"{character.name}"})
+
+        for c in self.characters:
+            c.conversational_context = []
     
     def generate_next_message(self, date_and_time):
         character = self.characters[self.current_speaker_index]

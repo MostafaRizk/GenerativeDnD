@@ -56,6 +56,7 @@ class NonPlayerCharacter(Character):
         self.world_info = json.load(f)
         f.close()
         self.name = self.bio["name"]
+        self.conversational_context = []
 
         self.client = client
         self.collection_name = "_".join([word.lower() for word in self.name.split()]).replace('\'', '')
@@ -310,19 +311,24 @@ class NonPlayerCharacter(Character):
         assert len(all_characters) == len(observations), "The number of characters and observations must be the same"
         #assert self not in other_characters, "Character can not be included in their own conditioned speech function call"
 
+        print("Conditioned speech: Retrieving memories")
         retrieved_memories = self.retrieve_memories(f"{self.chat_history[-1]['character']}: {self.chat_history[-1]['content']}")
         retrieved_memories.sort(key = lambda x: x[1]) # Sort by memory creation date
         memory_list = [{"role": "system", "content": f"{retrieved_memories[i][2]}", "character": ""} for i in range(len(retrieved_memories))]
-
-        context = []
         
         names = [c.name for c in all_characters]
-        context.append(self.get_context_for_observed_entities(names, observations))
+
+        # self.conversational_context = []
+
+        if len(self.conversational_context) == 0:
+            print("Conditioned speech: Creating conversational context")
+            self.conversational_context.append(self.get_context_for_observed_entities(names, observations))
         
-        if len(all_characters) <= 1:
-            context.append(f"{self.name} sees absolutely nobody around. {self.name} is completely alone.")
+            if len(all_characters) <= 1:
+                self.conversational_context.append(f"{self.name} sees absolutely nobody around. {self.name} is completely alone.")
         
-        context = "\n\n".join(context)
+        print("Conditioned speech: Updating plan")
+        context = "\n\n".join(self.conversational_context)
         #observations = "\n\n".join(observations)
         self.update_current_task(date_and_time)
         verbose_location_string, _, _, _ = self.world.get_location_context_for_character(self)
@@ -339,6 +345,7 @@ class NonPlayerCharacter(Character):
 
         done = False
         
+        print("Conditioned speech: Doing Inference")
         while not done:
             try:
                 message = self.model.inference_from_history(memory_list + list(self.chat_history) + speech_prompt, self.name, inference_type="character")

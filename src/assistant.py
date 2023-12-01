@@ -149,6 +149,7 @@ class Assistant():
         
         character.update_description()
         character.importance_tally = 0
+        character.conversational_context = []
     
     def try_to_reflect_for_character(self, character):
         if type(character) == NonPlayerCharacter and character.importance_tally >= self.REFLECTION_THRESHOLD:
