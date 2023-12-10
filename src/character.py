@@ -118,6 +118,7 @@ class NonPlayerCharacter(Character):
         last_full_stop = summary.rfind('.')
         cutoff_index = max(last_newline, last_full_stop)
         summary = summary[:cutoff_index]
+        print(summary)
 
         return summary
     

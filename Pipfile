@@ -14,6 +14,7 @@ jupyter = "*"
 scipy = "1.11.4"
 gradio = "4.7.1"
 streamlit = "1.28.2"
+Flask = "3.0.0"
 
 [dev-packages]
 
