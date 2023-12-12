@@ -90,7 +90,8 @@ class Conversation():
             new_buffer.append(self.conversation_buffer.popleft())
         self.conversation_buffer = new_buffer
 
-        del self.appearance_dict[character]
+        if character in self.appearance_dict:
+            del self.appearance_dict[character]
 
         specific_location = self.location.split(":")[-1]
         character_departure = f"*{character.name} leaves {specific_location}*"
@@ -136,6 +137,7 @@ class Conversation():
     def store_observation(self, observation, importance, observed_character=None):
         for character in self.characters:
             if type(character) != PlayerCharacter:
+                print(type(character))
                 character.store_memory(observation, importance)
         
         if observed_character:
@@ -179,6 +181,7 @@ class Conversation():
         """
         for character in self.characters:
             if character != new_character and type(character) != NonPlayerCharacter:
+                print(f"{new_character.name} is observing {character.name}")
                 appearance, importance = self.appearance_dict[character]
                 new_character.listen(appearance, "", "system")
                 new_character.store_memory(appearance, importance)

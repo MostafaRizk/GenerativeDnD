@@ -34,6 +34,21 @@ def load_characters(characters_by_location, world, character_names_file, json_pa
             
             characters_by_location[world.expand_loc_string(new_character.location)].append(new_character)
 
+def set_up_new_convo_attributes(convo_location, convo_setup, convo_character_list):
+    print("Creating appearance dictionary")
+    st.session_state.conversations_by_location[convo_location].store_observation(observation=convo_setup, importance=1)
+
+    # Let every character see the others 
+    appearance_dict = {}
+
+    for character in convo_character_list:
+        appearance = character.appearance
+        importance = st.session_state.assistant.get_importance(appearance)
+        character.appearance_importance = importance
+        appearance_dict[character] = (appearance, importance)
+    
+    st.session_state.conversations_by_location[convo_location].store_appearances(appearance_dict)
+
 def move_person(column, person, old_location, new_location):
     expanded_new_location = st.session_state.world.expand_loc_string(new_location)
     # Remove character from old location
@@ -62,10 +77,13 @@ def move_person(column, person, old_location, new_location):
     print(f"Adding {person.name} to {expanded_new_location}")
     st.session_state.characters_by_location[expanded_new_location].append(person)
     if expanded_new_location in st.session_state.conversations_by_location and person not in st.session_state.conversations_by_location[expanded_new_location].characters:
+        print("Adding the character to a pre-existing conversation")
         st.session_state.conversations_by_location[expanded_new_location].add_character(person)
     elif expanded_new_location not in st.session_state.conversations_by_location:
+        print("Creating a brand new conversation")
         verbose_location_string, _, _, _ = st.session_state.world.get_location_context_for_character(person)
         st.session_state.conversations_by_location[expanded_new_location] = Conversation([person], verbose_location_string, new_location)
+        set_up_new_convo_attributes(expanded_new_location, verbose_location_string, [person])
     
     person.location = new_location
 
@@ -132,18 +150,7 @@ if "setup_complete" not in st.session_state:
         setup = default_setup
 
         st.session_state.conversations_by_location[location] = Conversation(character_list, setup, location)
-        st.session_state.conversations_by_location[location].store_observation(observation=setup, importance=1)
-
-        # Let every character see the others 
-        appearance_dict = {}
-
-        for character in character_list:
-            appearance = character.appearance
-            importance = st.session_state.assistant.get_importance(appearance)
-            character.appearance_importance = importance
-            appearance_dict[character] = (appearance, importance)
-        
-        st.session_state.conversations_by_location[location].store_appearances(appearance_dict)
+        set_up_new_convo_attributes(location, setup, character_list)
 
     # Get or set world creation time
     print("Setting world time")
@@ -207,21 +214,24 @@ def display_messages(column, speaker_name, response, player_flag):
         full_response = ""
         
         # Simulate stream of response with milliseconds delay
-        for chunk in response.split():
-            full_response += chunk + " "
-            time.sleep(0.05)
-            # Add a blinking cursor to simulate typing
-            message_placeholder.markdown(full_response + "▌")
+        if not player_flag:
+            for chunk in response.split():
+                full_response += chunk + " "
+                time.sleep(0.05)
+                # Add a blinking cursor to simulate typing
+                message_placeholder.markdown(full_response + "▌")
+            
+            message_placeholder.markdown(full_response)
         
-        message_placeholder.markdown(full_response)
+        else:
+            message_placeholder.markdown(response)
 
     if player_flag:
         role = "user"
     else:
         role = "assistant"
-    
-    # Add response to chat history
-    st.session_state.messages[location].append({"role": role, "content": full_response, "character": speaker_name})
+        # Add response to chat history
+        st.session_state.messages[location].append({"role": role, "content": full_response, "character": speaker_name})
 
 # Display contexts
 for col in cols:
@@ -245,17 +255,19 @@ for location, conversation in st.session_state.conversations_by_location.items()
         if response:
             speaker.set_last_response(response)
             conversation.generate_next_message(datetime.strptime(st.session_state.current_world_time, DATE_FORMAT))
-            if response:
-                #st.session_state.messages[location].append({"role": "user", "content": response, "character": speaker.name})
-                with location_to_col[location]:
-                    display_messages(location_to_col[location], name, response, player_flag=True)
+            print("Display messages 1")
+            with location_to_col[location]:
+                display_messages(location_to_col[location], name, response, player_flag=True)
+            st.session_state.messages[location].append({"role": "user", "content": response, "character": speaker.name})
             
-            while not conversation.is_player_next():
-                name, response = conversation.generate_next_message(datetime.strptime(st.session_state.current_world_time, DATE_FORMAT))
-                with location_to_col[location]:
-                    display_messages(location_to_col[location], name, response, player_flag=False)
+            # while not conversation.is_player_next():
+            #     print("Display messages 2")
+            #     name, response = conversation.generate_next_message(datetime.strptime(st.session_state.current_world_time, DATE_FORMAT))
+            #     with location_to_col[location]:
+            #         display_messages(location_to_col[location], name, response, player_flag=False) 
         
     else:
+        print("Display messages 3")
         name, response = conversation.generate_next_message(datetime.strptime(st.session_state.current_world_time, DATE_FORMAT))
         with location_to_col[location]:
             display_messages(location_to_col[location], name, response, player_flag=False)
@@ -277,5 +289,7 @@ for location, conversation in st.session_state.conversations_by_location.items()
         ###
         
         change_location_prompt(location_to_col[location], speaker, location, new_location)
+    
+st.rerun()
 
 
